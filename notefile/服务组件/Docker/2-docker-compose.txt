@@ -1,0 +1,44 @@
+compose文件参考： https://docs.docker.com/compose/compose-file/
+compose命令参考： https://docs.docker.com/compose/reference/
+
+docker-compose用于单机管理编排容器，将多个相关容器一次性启动。
+docker-desktop默认包含V2版本的docker-compose，可通过命令行查看：
+docker compose version
+
+compose-file是一个yaml文件，默认文件名为compose.yaml，兼容compose.yml，
+也向后兼容docker-compose.yaml和docker-compose.yml
+
+构建镜像，(重新)创建服务，启动服务，关联容器
+docker compose up -d
+默认会从当前目录下寻找compose文件，也可通过-f参数指定。
+
+停止运行容器：
+docker compose stop
+停止并释放容器：
+docker compose down
+
+========== ========== compose.yaml示例：nsq组件 ========== ==========
+
+name: nsq
+services:
+  nsqlookupd:
+    image: nsqio/nsq
+    command: /nsqlookupd
+    ports:
+      - 4160:4160
+      - 4161:4161
+  nsqd:
+    image: nsqio/nsq
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 --broadcast-address=172.xx.xx.1 #宿主机ip必须指定
+    depends_on:
+      - nsqlookupd
+    ports:
+      - 4150:4150
+      - 4151:4151
+  nsqadmin:
+    image: nsqio/nsq
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd  
+    ports:
+      - 4171:4171

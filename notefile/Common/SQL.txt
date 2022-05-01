@@ -1,0 +1,112 @@
+结构化查询语言（Structured Query Language，SQL）用于管理
+关系数据库管理系统（Relational Database Management System，RDBMS）。
+
+数据定义语言（Data Definition Language，DDL）用于数据结构定义与数据库对象定义。
+核心指令是 CREATE、ALTER、DROP。
+
+数据操纵语言（Data Manipulation Language, DML）用于读写数据。
+核心指令是 INSERT、UPDATE、DELETE、SELECT，合称 CRUD (Create, Read, Update, Delete)。
+
+事务控制语言 (Transaction Control Language, TCL) 用于管理数据库中的事务。
+核心指令是 COMMIT、ROLLBACK。
+
+数据控制语言 (Data Control Language, DCL) 是一种可对数据访问权进行控制的指令，
+它可以控制特定用户账户对数据表、查看表、预存程序、用户自定义函数等数据库对象的控制权。
+核心指令是 GRANT、REVOKE。
+可利用DCL控制的权限有：CONNECT、SELECT、INSERT、UPDATE、DELETE、EXECUTE、USAGE、REFERENCES。
+
+========== ========== ========== ========== ==========
+
+SQL语句不区分大小写，但是数据库表名、列名和值是否区分，依赖于具体的DBMS以及配置。
+规范建议：关键字与函数名全部大写，数据库、表、字段名全部小写。
+多条SQL语句必须以分号分隔。
+
+# 单行注释
+-- 单行注释
+/* 多行注释 */
+
+SQL聚合函数：COUNT()计数，MAX()最大值、MIN()最小值、SUM()总和、AVG()平均值。
+
+COUNT(*)、COUNT(1) 和 COUNT(主键id) 都表示返回满足条件的结果集的总行数；
+而COUNT(col)则表示返回满足条件的数据行里面col不为NULL的总个数。
+效率：COUNT(*)≈COUNT(1)>COUNT(主键id)≈COUNT(非空col)>COUNT(可空col)
+
+========== ========== ========== ========== ==========
+
+INSERT INTO tb VALUES (val11,val21,val31), (val12,val22,val32); # 插入完整的行，必须按顺序覆盖所有字段，自增字段值设为NULL
+INSERT INTO tb (col1,col2) VALUES (val11,val21), (val12,val22); # 指定字段插入
+INSERT INTO tb SET col1=val1, col2=val2; # 指定字段逐一对应单行插入
+
+INSERT INTO tb1 (col1,col2) SELECT col3,col4 FROM tb2; #从tb2查找到的数据插入到tb1中
+UPDATE tb SET col1=val1, col2=val2; # 更新数据，可带上WHERE,ORDER,LIMIT子句
+
+DELETE FROM tb; # 删除数据，可带上WHERE,ORDER,LIMIT子句
+TRUNCATE TABLE tb; # 清空表
+
+SELECT fn_val; # 查询指定函数信息(eg:NOW(),VERSION()等)
+SELECT * FROM tb; # 查询所有列
+SELECT col1,col2 FROM tb; # 查询指定列
+SELECT DISTINCT col1,col2 FROM tb; # 去重查询
+
+INSERT的val可以是标量值或函数表达式值(eg:NOW(),LEFT(UUID(),8)等)
+UPDATE的val可以是标量值或函数/字段表达式(eg:col1,col2+1,RIGHT(col3,1)等)
+SELECT的col可以是标量值或字段名或函数/字段表达式，eg:
+    MAX(LENGTH(col)) as col_as
+    CASE col WHEN val1 THEN res1 WHEN val2 THEN res2 ELSE res3 END AS col_as
+    CASE WHEN exp1 THAN res1 WHEN exp2 THAN res2 ELSE res3 END AS col_as
+    IF(exp1,res1,res2) AS col_as # 如果exp1成立则值为res1，不成立则值为res2
+    IFNULL(col,res) AS col_as # 如果col值为NULL则替换成res
+    这里的res同样可以是可以是标量值或字段名或函数/字段表达式。
+
+WHERE cond 条件语句用于过滤记录，与SELECT,UPDATE,DELETE一起使用。
+多个cond以AND或OR连接，AND优先级高于OR，可用()改变优先级。条件前加NOT表示取反。
+cond格式为：col opt val_range，opt操作符有：= <> > < >= <= BETWEEN LIKE IN
+    col; # 当col为真值（非0非NULL）
+    col=val;
+    col<>val 等价于 NOT col=val
+    col>=val_min AND col<=val_max 等价于 col BETWEEN val_min AND val_max
+    col>=val 等价于 NOT col<val
+    col IN (val1,val2) 等价于 col=val1 OR col=val2
+    col NOT IN (val1,val2) 等价于 col<>val1 AND col1<>val2
+    col IS NULL # col为NULL
+    col IS NOT NULL # col不为NULL
+    col LIKE 'c_t' # 任意一个字符用_表示
+    col NOT LIKE '%str%'; # 任意个字符串用%表示
+    col LIKE '%1%%' ESCAPE '1'; # 查询col含有%号的数据
+
+GROUP BY 子句将记录分组到汇总行中，为每个组返回一个记录。
+GROUP BY col1,col2; # 将col1和col2有不同的归为一类
+去重查询 SELECT col1,col2 FROM tb GROUP BY col1,col2; 优于 SELECT DISTINCT col1,col2 FROM tb;
+SELECT COUNT(*) AS col_as,col FROM tb GROUP BY col; # 分组聚合，还可以用col或col_as字段进行排序
+
+HAVING exp opt val 用于对汇总的 GROUP BY 结果进行过滤。
+SELECT col FROM tb GROUP BY col HAVING COUNT(*) > 1; # 查找重复的col
+SELECT col,COUNT(*) AS col_as FROM tb GROUP BY col HAVING col_as > 1; # 查找重复的col及其数量
+
+ORDER BY col1 DESC,col2 [ASC]; #先根据col1降序，再根据col2升序排列
+
+LIMIT 限制条数，多用于SELECT，也可用于UPDATE和DELETE
+LIMIT 4; # 从首条起限制4条数据
+LIMIT 4 OFFSET 2 等价于 LIMIT 2,4 # 跳过前2条从第三条起限制4条数据
+
+同时带有多个子句顺序： WHERE GROUP HAVING ORDER LIMIT
+
+LEFT JOIN 会返回左表全部数据，右表无关联数据以NULL填充，RIGHT JOIN 类似但以右表为基。
+[INNER] JOIN 只返回相关联的数据。
+tb1 LEFT JOIN tb2 ON tb1.col1=tb2.col2 等价于 tb2 RIGHT JOIN tb1 ...
+tb1 AS t1 INNER JOIN tb2 AS t2 ON t1.col1=t2.col2; # 使用表别名，AS可省略
+tb t1 LEFT JOIN tb t2 ON t1.col1=t2.col2 LEFT JOIN tb t3 ON t2.col1=t3.col2; # 自关联，多用于多级分类表。
+UPDATE tb1 JOIN tb2 ON tb1.col1=tb2.col1 SET tb1.col2=tb2.col2; # 关联更新，多用于填充冗余字段。
+条件关联，eg: m表有ref_type为1关联a表数据，ref_type为2关联b表数据。
+SELECT m.id,m.ref_type,CASE m.ref_type WHEN 1 THEN a.name WHEN 2 b.name ELSE '' END AS name FROM 
+m LEFT JOIN a ON m.ref_type=1 AND m.ref_id=a.id LEFT JOIN b ON m.ref_type=2 AND m.ref_id=b.id;
+
+子查询可以作为待操作的tb、字段设置的val、条件语句的val_range，还可以嵌套子查询。
+SELECT * FROM tb WHERE col1 = (SELECT MAX(col2) FROM tb); # 当最大/最小值同时存在多条时，可以获得多条
+SELECT * FORM tb ORDER BY col DESC LIMIT 1; # 当最大/最小值同时存在多条时也只返回一条数据。
+SELECT * FROM tb1 WHERE col1 IN (SELECT DISTINCT col2 FROM tb2); # IN/EXISTS前加NOT取相反结果
+SELECT * FROM tb1 WHERE EXISTS (SELECT * FROM tb2 WHERE tb2.col2=tb1.col1);
+
+DELETE FROM tb AS t1 LEFT JOIN
+(SELECT id,name FROM tb GROUP BY name HAVING COUNT(id)>1) AS t2
+ON t1.name=t2.name WHERE t1.id>t2.id; # 删除tb表中name重复数据id较大的行
