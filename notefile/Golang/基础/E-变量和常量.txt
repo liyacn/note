@@ -1,0 +1,100 @@
+Go语言中的变量需要声明后才能使用，同一作用域内不支持重复声明，并且Go语言的变量声明后必须使用。
+使用关键字var定义变量，自动初始化为零值（数值类型为0，布尔类型为false，空字符串""）。
+如果提供初始化值，可省略变量类型，由编译器自动推断。
+var i int
+var j float32 = 1
+var s         = "abc"
+
+一次性定义多个变量：
+var x, y, z int
+var s, n = "abc", 123
+var (
+	id   int
+	name string
+)
+
+变量定义可以包含初始值，每个变量对应一个：
+var i, j int = 1, 2
+
+如果初始化是使用表达式，则可以省略类型；变量从初始值中获得类型：
+var c, python, java = true, false, "no!"
+
+函数内部，可以使用更简略的":="方式定义变量。":="简洁赋值语句在明确类型的地方，可以用于替代var定义。
+	k := 3
+	c, python, java := false, true, "yes!"
+函数外的每个语句都必须以关键字开始，":=" 结构不能使用在函数外。
+
+特殊只写变量"_"，用于忽略值占位。
+func test() (int, string) {
+	return 1, "abc"
+}
+func main() {
+	_ , s := test()
+	println(s) // abc
+}
+
+常量的定义与变量类似，使用const键字，代表永远是只读的，不能修改。
+常量值必须是编译期可确定的字符、字符串、布尔或数字类型的值。
+一个未指定类型的常量由上下文来决定其类型。
+
+const x, y int = 1, 2     // 多常量初始化
+const s = "Hello, World!" // 类型推断
+const ( //常量组
+	a, b      = 10, 100
+	c    bool = false
+)
+func main() {
+	const str = "xxx" // 未使用的局部常量不会引发编译错误。
+}
+
+在常量组中，如不提供类型和初始化值，那么视作与上一个常量相同。
+const (
+	s = "abc"
+	x // x = "abc"
+)
+
+常量值还可以是len、cap、unsafe.Sizeof等编译期可确定结果的函数返回值。
+const (
+	a = "abc"
+	b = len(a)
+	c = unsafe.Sizeof(b)
+)
+
+iota是go语言的常量计数器，只能在常量的表达式中使用。
+iota在const关键字出现时将被重置为0。
+const中每新增一行常量声明将使iota计数一次(iota可理解为const语句块中的行索引)。
+使用iota能简化定义，在定义枚举时很有用。
+
+const (
+	Sunday = iota // 0
+	Monday        // 1
+	Tuesday       // 2
+	Wednesday     // 3
+	Thursday      // 4
+	Friday        // 5
+	Saturday      // 6
+)
+
+const (
+	B  = 1 << (10 * iota)
+	KB // 1<<10=1024
+	MB // 1<<20=1048576
+	GB // 1<<30=1073741824
+	TB // 1<<40=1099511627776
+)
+
+如果iota自增被打断，须显式恢复：
+const (
+	A = iota // 0
+	B        // 1
+	C = "c"  // c
+	D        // c，与上  相同。
+	E = iota // 4，显式恢复。注意计数包含了 C、D 两 。
+	F        // 5
+)
+
+在同一常量组中，可以提供多个iota，它们各自增长：
+const (
+	A, B = iota, iota << 10 // 0, 0 << 10
+	C, D                    // 1, 1 << 10
+)

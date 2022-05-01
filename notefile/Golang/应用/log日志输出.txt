@@ -1,0 +1,65 @@
+"log"包实现了简单的日志服务。
+本包定义了Logger类型，该类型提供了一些格式化输出的方法。本包也提供了一个预定义的“标准”Logger。
+Fatal系列函数会在写入日志信息后调用os.Exit(1)。Panic系列函数会在写入日志信息后panic。
+Logger结构内置sync.Mutex，输出和设置会加锁。
+
+创建一个Logger。
+func New(out io.Writer, prefix string, flag int) *Logger
+参数out设置日志信息写入的目的地。
+参数prefix会添加到生成的每一条日志前面。
+参数flag定义日志的属性（时间、文件等等）。
+
+func (l *Logger) Flags() int
+返回logger的输出选项。
+
+func (l *Logger) SetFlags(flag int)
+设置logger的输出选项。
+
+func (l *Logger) Prefix() string
+返回logger的输出前缀。
+
+func (l *Logger) SetPrefix(prefix string)
+设置logger的输出前缀。
+
+func (l *Logger) Writer() io.Writer
+返回输出目标。
+
+func (l *Logger) SetOutput(w io.Writer)
+设置输出目标。
+
+func (l *Logger) Output(calldepth int, s string) error 
+写入输出一次日志事件。如果s末尾没有换行会添加换行符。
+
+func (l *Logger) Printf(format string, v ...any)
+调用l.Output将生成的格式化字符串输出到logger，参数用和fmt.Printf相同的方法处理。
+
+func (l *Logger) Print(v ...any)
+调用l.Output将生成的格式化字符串输出到logger，参数用和fmt.Print相同的方法处理。
+
+func (l *Logger) Println(v ...any)
+调用l.Output将生成的格式化字符串输出到logger，参数用和fmt.Println相同的方法处理。
+
+func (l *Logger) Fatalf(format string, v ...any)
+等价于{l.Printf(v...); os.Exit(1)}
+
+func (l *Logger) Fatal(v ...any)
+等价于{l.Print(v...); os.Exit(1)}
+
+func (l *Logger) Fatalln(v ...any)
+等价于{l.Println(v...); os.Exit(1)}
+
+func (l *Logger) Panicf(format string, v ...any)
+等价于{l.Printf(v...); panic(...)}
+
+func (l *Logger) Panic(v ...any)
+等价于{l.Print(v...); panic(...)}
+
+func (l *Logger) Panicln(v ...any)
+等价于{l.Println(v...); panic(...)}
+
+包内预定义标准Logger：
+var std = New(os.Stderr, "", LstdFlags)
+可通过Default函数返回
+func Default() *Logger { return std }
+包级别函数Flags、SetFlags、Prefix、SetPrefix、Writer、SetOutput都是基于预定义标准Logger的操作。
+包级别函数Output、Print[f|ln]、Fatal[f|ln]和Panic[f|ln]使用预定义标准Logger输出。

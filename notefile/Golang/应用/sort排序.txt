@@ -1,0 +1,112 @@
+"sort"包提供了排序切片和用户自定义数据集的函数。
+
+type Interface interface {
+    Len() int //返回集合中的元素个数
+    Less(i, j int) bool //报告索引i的元素是否比索引j的元素小
+    Swap(i, j int) //交换索引i和j的两个元素
+}
+一个满足sort.Interface接口的（集合）类型可以被本包的函数进行排序。
+
+内置以下类型实现了sort.Interface接口：
+type IntSlice []int
+type Float64Slice []float64
+type StringSlice []string
+
+func Sort(data Interface)
+按照Less方法确定的升序对数据进行排序。不保证排序的稳定性（即不保证相等元素的相对次序不变）。
+
+func Stable(data Interface)
+按照Less方法确定的升序对数据进行排序。并保证排序的稳定性，相等元素的相对次序不变。
+
+func Reverse(data Interface) Interface
+返回一个新的Interface接口，对该接口排序可生成递减序列。
+
+func IsSorted(data Interface) bool
+判断data是否已被排序
+
+func Ints(x []int)
+func Float64s(x []float64)
+func Strings(x []string)
+将x排序为递增顺序
+
+func IntsAreSorted(x []int) bool
+func Float64sAreSorted(x []float64) bool
+func StringsAreSorted(x []string) bool
+判断x是否已排序为递增顺序
+
+func Slice(x any, less func(i, j int) bool)
+使用指定的less方法对x进行排序，x如果不是一个slice会panic，不保证排序的稳定性。
+
+func SliceStable(x any, less func(i, j int) bool)
+使用指定的less方法对x进行排序，且保证排序的稳定性（相等元素保持原来的顺序）。
+
+func SliceIsSorted(x any, less func(i, j int) bool) bool
+判断数据x是否已按照指定的less方法排序。
+
+func Search(n int, f func(int) bool) int
+func SearchInts(a []int, x int) int
+func SearchFloat64s(a []float64, x float64) int
+func SearchStrings(a []string, x string) int
+使用二分查找并返回[0,n)中f(i)为true的最小索引i，x<i时f(x)=false，x>i时f(x)=true，未查找到返回结果是n而非-1。
+
+========== ========== ========== ========== ==========
+
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	i := []int{6, 5, 7, 1, 8, 3, 4, 0, 2, 9}
+	sort.Ints(i)
+	fmt.Println(i) //[0 1 2 3 4 5 6 7 8 9]
+
+	f := []float64{3.14, 0.68, 9.99}
+	sort.Float64s(f)
+	fmt.Println(f) //[0.68 3.14 9.99]
+
+	s := []string{"dog", "cat", "Horse", "rabbit", "goat"}
+	sort.Strings(s)
+	fmt.Println(s) //[Horse cat dog goat rabbit]
+
+	user := []struct {
+		Name string
+		Age  int
+	}{
+		{
+			Name: "Tom",
+			Age:  8,
+		},
+		{
+			Name: "Jerry",
+			Age:  2,
+		},
+		{
+			Name: "Mike",
+			Age:  5,
+		},
+	}
+	sort.Slice(user, func(i, j int) bool {
+		return user[i].Age > user[j].Age //按Age字段倒序
+	})
+	fmt.Println(user) //[{Tom 8} {Mike 5} {Jerry 2}]
+}
+
+// 多条件排序，可先按优先级低的排序，再按优先级高的稳定排序。
+
+type Item struct {
+	I int
+	S string
+}
+
+// SortByIS 优先根据i升序，i相同再根据s升序
+func SortByIS(items []*Item) {
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].S < items[j].S
+	})
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].I < items[j].I
+	})
+}
