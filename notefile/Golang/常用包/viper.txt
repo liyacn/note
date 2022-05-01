@@ -1,0 +1,97 @@
+"github.com/spf13/viper"包可用于解析json,toml,yaml,命令参数,环境变量,远程配置，一次初始化，全局调用。
+
+========== ========== ========== ========== ==========
+
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+	"strings"
+	"time"
+)
+
+const config = `
+app:
+  isprod: true
+  logger: file
+redis:
+  mastername: failover
+  username: root
+  password: test
+  db: 1
+  sentineladdrs:
+    - 127.0.0.1:26379
+    - 127.0.0.2:26379
+    - 127.0.0.3:26379
+  sentinelusername: root
+  sentinelpassword: test
+  cert: |
+    -----BEGIN CERTIFICATE-----
+    -----END CERTIFICATE-----
+  key: |
+    -----BEGIN RSA PRIVATE KEY-----
+    -----END RSA PRIVATE KEY-----
+  ca: |
+    -----BEGIN CERTIFICATE-----
+    -----END CERTIFICATE-----
+  idletimeout: 1h2m3s4ms5us6ns
+timerange:
+  begin: 2022-01-01T00:00:00+08:00
+  end: 2022-12-31T23:59:59+08:00
+` //配置内容或写入到conf.yaml文件
+
+func main() {
+	viper.SetConfigType("yaml") //文本语言
+	//viper.SetConfigName("conf")                  //文件名称(不含后缀)
+	//viper.AddConfigPath(".")                     //搜索目录
+	//if err := viper.ReadInConfig(); err != nil { //读入到viper包私有的map[string]any类型变量中
+	//	log.Fatal("viper.ReadInConfig error", err)
+	//}
+	if err := viper.ReadConfig(strings.NewReader(config)); err != nil { //或从io.Reader读取
+		log.Fatal("viper.ReadConfig error", err)
+	}
+
+	//直接从内存中读取配置，viper包会进行断言和解析，当不存在时返回零值。
+	fmt.Println(viper.GetBool("app.isprod"))                 //true
+	fmt.Println(viper.GetString("app.logger"))               //file
+	fmt.Println(viper.GetInt("redis.db"))                    //1
+	fmt.Println(viper.GetStringSlice("redis.sentineladdrs")) //[127.0.0.1:26379 127.0.0.2:26379 127.0.0.3:26379]
+	fmt.Println(viper.GetDuration("redis.idletimeout"))      //1h2m3.004005006s Duration支持的最大单位是h
+	fmt.Println(viper.GetTime("timerange.end"))              //2022-12-31 23:59:59 +0800 CST
+
+	//解析到结构体中，后续每次从结构体读取，不需要再进行断言和解析，性能更优。
+	var cfg struct {
+		App struct {
+			IsProd bool
+			Logger string
+		}
+		Redis struct {
+			MasterName       string
+			Username         string
+			Password         string
+			DB               int
+			SentinelAddrs    []string
+			SentinelUsername string
+			SentinelPassword string
+			Cert             string
+			Key              string
+			Ca               string
+			IdleTimeout      time.Duration
+		}
+		TimeRange struct {
+			Begin time.Time
+			End   time.Time
+		}
+	}
+	if err := viper.Unmarshal(&cfg); err != nil {
+		log.Fatal("viper.Unmarshal error: ", err)
+	}
+	fmt.Println(cfg.App.IsProd)          //true
+	fmt.Println(cfg.App.Logger)          //file
+	fmt.Println(cfg.Redis.DB)            //1
+	fmt.Println(cfg.Redis.SentinelAddrs) //[127.0.0.1:26379 127.0.0.2:26379 127.0.0.3:26379]
+	fmt.Println(cfg.Redis.IdleTimeout)   //1h2m3.004005006s
+	fmt.Println(cfg.TimeRange.End)       //2022-12-31 23:59:59 +0800 CST
+}
