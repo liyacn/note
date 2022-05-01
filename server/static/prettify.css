@@ -1,0 +1,34 @@
+html{
+	scrollbar-width: thin;
+}
+
+.pln { color: #383a42 }  /* plain text */
+.str { color: #50a14f }  /* string content */
+.kwd { color: #a626a4 }  /* a keyword */
+.com { color: #a0a1a7 }  /* a comment */
+.typ { color: #4078f2 }  /* a type name */
+.lit { color: #986801 }  /* a literal value */
+.pun { color: #383a42 }  /* punctuation */
+.opn { color: #383a42 }  /* lisp open bracket */
+.clo { color: #383a42 }  /* lisp close bracket */
+.tag { color: #e45649 }  /* a markup tag name */
+.atn { color: #986801 }  /* a markup attribute name */
+.atv { color: #50a14f }  /* a markup attribute value */
+.dec { color: #4078f2 }  /* a declaration */
+.var { color: #986801 }  /* a variable name */
+.fun { color: #4078f2 }  /* a function name */
+
+pre.prettyprint {
+	font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Lucida Console", "DejaVu Sans Mono", "Liberation Mono", "Ubuntu Mono", "Courier New", "Source Han Mono SC", "PingFang SC Mono", "Microsoft YaHei Mono", "WenQuanYi Micro Hei Mono", "SimSun Mono", monospace;
+	font-size: 14px;
+	border: 1px solid #f0f0f0;
+	border-radius: 8px;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	tab-size: 4;
+	line-height: 22px;
+}
+
+li::marker {
+	color: #e0e0e0;
+}
