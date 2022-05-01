@@ -1,0 +1,122 @@
+"bytes"包实现了操作[]byte的常用函数。本包的函数和"strings"包的函数🔸相当类似。
+
+func HasPrefix(s, prefix []byte) bool 🔸
+func HasSuffix(s, suffix []byte) bool 🔸
+func Contains(b, subslice []byte) bool 🔸
+func ContainsAny(b []byte, chars string) bool 🔸
+func ContainsRune(b []byte, r rune) bool 🔸
+func Count(s, sep []byte) int 🔸
+func Repeat(b []byte, count int) []byte 🔸
+
+func Index(s, sep []byte) int 🔸
+func LastIndex(s, sep []byte) int 🔸
+func IndexByte(b []byte, c byte) int 🔸
+func LastIndexByte(s []byte, c byte) int 🔸
+func IndexRune(s []byte, r rune) int 🔸
+func IndexFunc(s []byte, f func(r rune) bool) int 🔸
+func LastIndexFunc(s []byte, f func(r rune) bool) int 🔸
+func IndexAny(s []byte, chars string) int 🔸
+func LastIndexAny(s []byte, chars string) int 🔸
+
+func Join(s [][]byte, sep []byte) []byte 🔸
+func Split(s, sep []byte) [][]byte 🔸
+func SplitAfter(s, sep []byte) [][]byte 🔸
+func SplitN(s, sep []byte, n int) [][]byte 🔸
+func SplitAfterN(s, sep []byte, n int) [][]byte 🔸
+
+func Fields(s []byte) [][]byte 🔸
+func FieldsFunc(s []byte, f func(rune) bool) [][]byte 🔸
+func Map(mapping func(r rune) rune, s []byte) []byte 🔸
+
+func Equal(a, b []byte) bool 🔺判断两个切片的内容是否完全相同。
+func Compare(a, b []byte) int 🔸
+func EqualFold(s, t []byte) bool 🔸
+func ToUpper(s []byte) []byte 🔸
+func ToLower(s []byte) []byte 🔸
+func ToTitle(s []byte) []byte 🔸
+func Title(s []byte) []byte 🔸
+func ToValidUTF8(s, replacement []byte) []byte 🔸
+
+func TrimLeft(s []byte, cutset string) []byte 🔸
+func TrimRight(s []byte, cutset string) []byte 🔸
+func Trim(s []byte, cutset string) []byte 🔸
+func TrimLeftFunc(s []byte, f func(r rune) bool) []byte 🔸
+func TrimRightFunc(s []byte, f func(r rune) bool) []byte 🔸
+func TrimFunc(s []byte, f func(r rune) bool) []byte 🔸
+func TrimSpace(s []byte) []byte 🔸
+func TrimPrefix(s, prefix []byte) []byte 🔸
+func TrimSuffix(s, suffix []byte) []byte 🔸
+
+func Replace(s, old, new []byte, n int) []byte 🔸
+func ReplaceAll(s, old, new []byte) []byte 🔸
+func Runes(s []byte) []rune 🔺返回和s等价的[]rune切片。（将utf-8编码的unicode码值分别写入单个rune）
+
+func NewReader(b []byte) *Reader 🔸
+func (r *Reader) Read(b []byte) (n int, err error) 🔸
+func (r *Reader) ReadAt(b []byte, off int64) (n int, err error) 🔸
+func (r *Reader) ReadByte() (byte, error) 🔸
+func (r *Reader) UnreadByte() error 🔸
+func (r *Reader) ReadRune() (ch rune, size int, err error) 🔸
+func (r *Reader) UnreadRune() error 🔸
+func (r *Reader) Seek(offset int64, whence int) (int64, error) 🔸
+func (r *Reader) WriteTo(w io.Writer) (n int64, err error) 🔸
+func (r *Reader) Size() int64 🔸
+func (r *Reader) Len() int 🔸
+func (r *Reader) Reset(b []byte) 🔸
+
+type Buffer struct {
+	// 包含不可导出字段 🔹部分方法与*strings.Builder类似
+}
+实现了"io"包的Reader、Writer、ReaderFrom、WriterTo、ByteScanner、RuneScanner、StringWriter等接口。
+
+func NewBuffer(buf []byte) *Buffer 使用buf作为初始内容创建并初始化一个Buffer。
+func NewBufferString(s string) *Buffer 使用s作为初始内容创建并初始化一个Buffer。
+func (b *Buffer) Bytes() []byte 返回未读取部分字节数据的切片。
+func (b *Buffer) String() string 将未读取部分的字节数据作为字符串返回；如果b是nil指针，会返回"<nil>"。
+
+func (b *Buffer) Len() int 🔹
+func (b *Buffer) Cap() int 🔹
+func (b *Buffer) Grow(n int) 🔹
+func (b *Buffer) Write(p []byte) (n int, err error) 🔹
+func (b *Buffer) WriteByte(c byte) error 🔹
+func (b *Buffer) WriteRune(r rune) (n int, err error) 🔹
+func (b *Buffer) WriteString(s string) (n int, err error) 🔹
+
+func (b *Buffer) WriteTo(w io.Writer) (n int64, err error) 
+从缓冲中读取数据直到缓冲内没有数据或遇到错误，并将这些数据写入w。
+
+func (b *Buffer) Truncate(n int) 
+丢弃缓冲中除前n字节数据外的其它数据，如果n小于零或者大于缓冲容量将panic。
+
+func (b *Buffer) Reset() 
+重设缓冲，因此会丢弃全部内容，等价于b.Truncate(0)。
+
+func (b *Buffer) ReadFrom(r io.Reader) (n int64, err error)
+从r中读取数据直到结束并将读取的数据写入缓冲中，如必要会增加缓冲容量。
+返回值n为从r读取并写入b的字节数；会返回读取时遇到的除了io.EOF之外的错误。
+
+func (b *Buffer) Read(p []byte) (n int, err error)
+从缓冲中读取数据直到缓冲中没有数据或者读取了len(p)字节数据，将读取的数据写入p。
+返回值n是读取的字节数，err总是nil或io.EOF。
+
+func (b *Buffer) Next(n int) []byte
+返回未读取部分前n字节数据的切片，并且移动读取位置，就像调用了Read方法一样。
+
+func (b *Buffer) ReadByte() (byte, error)
+读取并返回缓冲中的下一个字节。如果没有数据可用，返回值err为io.EOF。
+
+func (b *Buffer) UnreadByte() error
+吐出最近一次读取操作读取的最后一个字节。如果最后一次读取操作之后进行了写入，本方法会返回错误。
+
+func (b *Buffer) ReadRune() (r rune, size int, err error)
+读取并返回缓冲中的下一个utf-8码值。如果没有数据可用，返回值err为io.EOF。
+如果缓冲中的数据是错误的utf-8编码，本方法会吃掉一字节并返回(U+FFFD, 1, nil)。
+
+func (b *Buffer) UnreadRune() error
+吐出最近一次调用ReadRune方法读取的unicode码值。如果最近一次读写操作不是ReadRune，本方法会返回错误。
+
+func (b *Buffer) ReadBytes(delim byte) (line []byte, err error)
+读取直到第一次遇到delim字节，返回一个包含已读取的数据和delim字节的切片。
+
+func (b *Buffer) ReadString(delim byte) (line string, err error)
+读取直到第一次遇到delim字节，返回一个包含已读取的数据和delim字节的字符串。

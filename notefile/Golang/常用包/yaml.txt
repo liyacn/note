@@ -1,0 +1,123 @@
+"gopkg.in/yaml.v3"包用于yaml数据格式的序列化和解析。
+提供了与"encoding/json"包类似的序列化反序列化方法和接口。
+
+func Marshal(in any) (out []byte, err error)
+func Unmarshal(in []byte, out any) (err error)
+
+type Marshaler interface {
+	MarshalYAML() (interface{}, error)
+}
+type Unmarshaler interface {
+	UnmarshalYAML(value *Node) error
+}
+
+func NewEncoder(w io.Writer) *Encoder 初始化一个编码器
+func (e *Encoder) SetIndent(spaces int) 设置缩进空格数
+func (e *Encoder) Encode(v any) (err error) 编码写入数据
+func (e *Encoder) Close() (err error) 写入剩余数据并关闭编码器
+
+func NewDecoder(r io.Reader) *Decoder 初始化一个解码器
+func (dec *Decoder) KnownFields(enable bool) 确保要解码的键在结构体字段中存在
+func (dec *Decoder) Decode(v any) (err error) 解码数据
+
+========== ========== ========== ========== ==========
+
+type Data struct {
+	Bool     bool
+	Int      int
+	Float    float64 `yaml:"pi"`
+	String   string
+	Content  string
+	Array    []string
+	Bytes    []byte `yaml:",flow"`
+	Map      map[string]any
+	Object   map[string]any `yaml:",flow"`
+	Duration time.Duration
+	Time     time.Time
+	Struct   Struct
+}
+type Struct struct {
+	AppID   string
+	secret  string
+	Float32 float32
+}
+
+func en() {
+	data := &Data{
+		Bool:   true,
+		Int:    1,
+		Float:  3.141592653,
+		String: "ABC",
+		Content: `xxx
+yyy
+zzz`,
+		Array: []string{"apple", "banana"},
+		Bytes: []byte{65, 66, 67},
+		Map: map[string]any{
+			"key": "max_int64",
+			"num": math.MaxInt64,
+		},
+		Object: map[string]any{
+			"key": "min_int32",
+			"num": math.MinInt32,
+		},
+		Duration: 2*time.Hour + 3*time.Minute + 4*time.Second + 5*time.Millisecond,
+		Time:     time.Date(2022, 1, 1, 13, 14, 15, 0, time.Local),
+		Struct:   Struct{AppID: "wxa", secret: "sec", Float32: math.MaxFloat32},
+	}
+	b, _ := yaml.Marshal(data)
+	os.WriteFile("output.yaml", b, 0666)
+}
+
+/*
+bool: true
+int: 1
+pi: 3.141592653
+string: ABC
+content: |-
+    xxx
+    yyy
+    zzz
+array:
+    - apple
+    - banana
+bytes: [65, 66, 67]
+map:
+    key: max_int64
+    num: 9223372036854775807
+object: {key: min_int32, num: -2147483648}
+duration: 2h3m4.005s
+time: 2022-01-01T13:14:15+08:00
+struct:
+    appid: wxa
+    float32: 3.4028235e+38
+*/
+
+func de() {
+	s := `bool: true
+int: 1
+pi: 3.141592653
+string: ABC
+content: |-
+    xxx
+    yyy
+    zzz
+array:
+    - apple
+    - banana
+bytes: [65, 66, 67]
+map:
+    key: max_int64
+    num: 9223372036854775807
+object: {key: min_int32, num: -2147483648}
+duration: 2h3m4.005s
+time: 2022-1-1
+struct:
+    appid: wxa
+    float32: 3.4028235e+38
+`
+	var result Data
+	err := yaml.Unmarshal([]byte(s), &result)
+	fmt.Println(err)
+	fmt.Printf("%+v", result) //...Time:2022-01-01 00:00:00 +0000 UTC...
+}

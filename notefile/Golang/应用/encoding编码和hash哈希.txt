@@ -1,0 +1,190 @@
+hex也称为base16，使用16个可见字符来表示一个二进制数组，编码后数据大小变成原来的2倍。
+base32使用32个可见字符来表示一个二进制数组，编码后数据大小变成原来的8/5，如果不足8个字符默认会填充=。
+base64使用64个可见字符来表示一个二进制数组，编码后数据大小变成原来的4/3，如果不足4个字符默认会填充=。
+base64是具有比较高的空间效率的。hex和base32编码不区分大小写，base64区分大小写。
+
+"encoding/hex"包实现了16进制字符表示的编解码。
+
+"encoding/base32"包实现了RFC-4648规定的base32编码。
+预定义常量：
+	StdPadding rune = '=' // Standard padding character
+	NoPadding  rune = -1  // No padding
+	encodeStd = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+	encodeHex = "0123456789ABCDEFGHIJKLMNOPQRSTUV"
+func NewEncoding(encoder string) *Encoding
+使用给定的字符集创建一个编码规则，字符集长度必须为32。
+func (enc Encoding) WithPadding(padding rune) *Encoding
+创建一个指定填充符号的编码规则，padding不能是换行符或大于\xff，不要填充可设为预定义常量NoPadding。
+预定义编码规则：
+	StdEncoding //RFC-4648定义的标准base32编码字符集。
+	HexEncoding //RFC-4648定义的扩展Hex字符集，用于DNS。
+	
+"encoding/base64"包实现了RFC-4648规定的base64编码。
+预定义常量：
+	StdPadding rune = '=' // Standard padding character
+	NoPadding  rune = -1  // No padding
+	encodeStd = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	encodeURL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+func NewEncoding(encoder string) *Encoding
+使用给定的字符集创建一个编码规则，字符集长度必须为64且不能包含换行符。
+func (enc Encoding) WithPadding(padding rune) *Encoding
+创建一个指定填充符号的编码规则，padding不能是换行符或大于\xff，不要填充可设为预定义常量NoPadding。
+预定义编码规则：
+	StdEncoding    //RFC-4648定义的标准base64编码字符集。
+	RawStdEncoding //StdEncoding的无填充版本
+	URLEncoding    //RFC-4648定义的另一base64编码字符集，用于URL和文件名。
+	RawURLEncoding //URLEncoding的无填充版本
+
+"encoding/pem"包实现了PEM数据编码（源自保密增强邮件协议）。目前PEM编码主要用于TLS密钥和证书。
+	func Decode(data []byte) (p *Block, rest []byte)
+	func Encode(out io.Writer, b *Block) error
+	func EncodeToMemory(b *Block) []byte
+
+========== ========== ========== ========== ==========
+
+	var src = []byte(`?a=1.\/{[<@ #>]}`)
+
+	e1 := hex.EncodeToString(src)
+	d1, _ := hex.DecodeString(e1)
+	fmt.Println(e1, bytes.Equal(d1, src)) //3f613d312e5c2f7b5b3c4020233e5d7d true
+
+	e2 := base32.HexEncoding.EncodeToString(src)
+	d2, _ := base32.HexEncoding.DecodeString(e2)
+	fmt.Println(e2, bytes.Equal(d2, src)) //7TGJQC9EBGNNMMPS80G26FITFK====== true
+
+	e3 := base32.StdEncoding.EncodeToString(src)
+	d3, _ := base32.StdEncoding.DecodeString(e3)
+	fmt.Println(e3, bytes.Equal(d3, src)) //H5QT2MJOLQXXWWZ4IAQCGPS5PU====== true
+
+	e4 := base64.StdEncoding.EncodeToString(src)
+	d4, _ := base64.StdEncoding.DecodeString(e4)
+	fmt.Println(e4, bytes.Equal(d4, src)) //P2E9MS5cL3tbPEAgIz5dfQ== true
+
+	e5 := base64.URLEncoding.EncodeToString(src)
+	d5, _ := base64.URLEncoding.DecodeString(e5)
+	fmt.Println(e5, bytes.Equal(d5, src)) //P2E9MS5cL3tbPEAgIz5dfQ== true
+
+	block := &pem.Block{
+		Type:    "My Type",
+		Headers: map[string]string{"a": "one", "b": "two"},
+		Bytes:   []byte{49, 108, 178, 125, 95, 35, 126, 41, 129, 229, 48, 6, 94, 69, 20},
+	}
+	code := pem.EncodeToMemory(block)
+	fmt.Println(string(code))
+	/*
+	-----BEGIN My Type-----
+	a: one
+	b: two
+
+	MWyyfV8jfimB5TAGXkUU
+	-----END My Type-----
+	*/
+
+	block2, _ := pem.Decode(code)
+	if block2 == nil {
+		fmt.Println("block nil")
+	} else {
+		fmt.Println(block2.Bytes) //[49 108 178 125 95 35 126 41 129 229 48 6 94 69 20]
+	}
+
+========== ========== ========== ========== ==========
+
+"crypto/md5"包实现了MD5哈希算法。"crypto/sha1"包实现了SHA1哈希算法。
+"crypto/sha256"包实现了SHA224和SHA256哈希算法。"crypto/sha512"包实现了SHA512/224、SHA512/256、SHA384、SHA512哈希算法。
+"hash/adler32"、"hash/crc32"、"hash/crc64"、"hash/fnv"包还提供了其他不常用hash算法。
+"golang.org/x/crypto/"扩展包还提供了以下hash算法：
+md4、ripemd160、sha3.224、sha3.256、sha3.384、sha3.512、
+blake2s.128、blake2s.256、blake2b.256、blake2b.384、blake2b.512
+"crypto/hmac"包实现了加密哈希信息认证码。HMAC是使用key标记信息的加密hash。接收者使用相同的key运算来认证hash。
+哈希计算的结果通常使用hex进行编码，如业务上有额外约定亦可使用其他编码方式。
+
+"hash"包定义了以下三个接口：
+type Hash interface {
+	io.Writer
+	Sum(b []byte) []byte //将当前哈希追加到b并返回结果切片。
+	Reset()
+	Size() int //返回Sum将返回的字节数。
+	BlockSize() int
+}
+type Hash32 interface {
+	Hash
+	Sum32() uint32
+}
+type Hash64 interface {
+	Hash
+	Sum64() uint64
+}
+
+常用哈希方法：
+"crypto/md5":
+	func New() hash.Hash
+	func Sum(data []byte) [16]byte
+"crypto/sha1":
+	func New() hash.Hash
+	func Sum(data []byte) [20]byte
+"crypto/sha256":
+	func New() hash.Hash
+	func New224() hash.Hash
+	func Sum256(data []byte) [32]byte
+	func Sum224(data []byte) [28]byte
+"crypto/sha512":
+	func New() hash.Hash
+	func New384() hash.Hash
+	func New512_256() hash.Hash
+	func New512_224() hash.Hash
+	func Sum512(data []byte) [64]byte
+	func Sum384(data []byte) [48]byte
+	func Sum512_256(data []byte) [32]byte
+	func Sum512_224(data []byte) [28]byte
+"crypto/hmac":
+	func New(h func() hash.Hash, key []byte) hash.Hash
+	func Equal(mac1, mac2 []byte) bool
+
+========== ========== ========== ========== ==========
+
+{
+	//多次write用法
+	h := md5.New()
+	h.Write([]byte("abc"))
+	h.Write([]byte("123"))
+	s := hex.EncodeToString(h.Sum(nil))
+	fmt.Println(s) // e99a18c428cb38d5f260853678922e03
+
+	//一次Sum用法
+	sum := md5.Sum([]byte("abc123"))
+	ss := hex.EncodeToString(sum[:])
+	fmt.Println(ss) // e99a18c428cb38d5f260853678922e03
+
+	//hmac用法
+	mac := hmac.New(md5.New, []byte("key"))
+	mac.Write([]byte("abc"))
+	mac.Write([]byte("123"))
+	ms := hex.EncodeToString(mac.Sum(nil))
+	fmt.Println(ms) // e33cf8cd1f571c0b6d900fad52ce9a7e 长度取决于使用的hash
+}
+
+为方便使用，也可以统一封装成支持任意多个字符串或字节数组的函数
+
+type stream interface{ []byte | string }
+
+func hashes[T stream](h hash.Hash, src []T) string {
+	for _, v := range src {
+		h.Write([]byte(v))
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func MD5[T stream](src ...T) string    { return hashes(md5.New(), src) }
+func SHA1[T stream](src ...T) string   { return hashes(sha1.New(), src) }
+
+func HmacMD5[K, T stream](key K, src ...T) string  { return hashes(hmac.New(md5.New, []byte(key)), src) }
+func HmacSHA1[K, T stream](key K, src ...T) string { return hashes(hmac.New(sha1.New, []byte(key)), src) }
+
+{
+	s1 := MD5("abc", "123")
+	s2 := MD5("abc123")
+	s3 := HmacMD5("key", "abc", "123")
+	s4 := HmacMD5("key", "abc", "123")
+	fmt.Println(s1 == s2, s1) // true e99a18c428cb38d5f260853678922e03
+	fmt.Println(s3 == s4, s3) // true e33cf8cd1f571c0b6d900fad52ce9a7e
+}

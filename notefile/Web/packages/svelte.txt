@@ -1,0 +1,41 @@
+文档参考：
+https://svelte.dev/
+https://kit.svelte.dev/docs/adapter-static
+
+========== ========== 初始化项目 ========== ==========
+
+1. npm create svelte@latest
+2. Where should we create your project? 输入项目名
+3. Which Svelte app template? 选择模板 Skeleton project
+4. Add type checking with TypeScript? 选择 Yes, using JavaScript with JSDoc comments 或 No
+5. Select additional options 可按需勾选 ESLint, Prettier 
+6. 根据提示进入目录，运行命令安装和启动项目：npm install && npm run dev
+
+========== ========== 编译配置 ========== ==========
+
+1. npm rm @sveltejs/adapter-auto && npm i -D @sveltejs/adapter-static
+2. 编译修改svelte.config.js文件内容：
+import adapter from '@sveltejs/adapter-static';
+export default {
+	kit: {
+		adapter: adapter({
+			pages: 'build',
+			assets: 'build',
+			fallback: undefined,
+			precompress: false,
+			strict: true
+		})
+	}
+};
+3. 创建 src/routes/+layout.js 文件并写入两行：
+export const prerender = true;
+export const ssr = false; //避免刷新回退到首页
+
+========== ========== 打包发布 ========== ==========
+
+1. 编译后生成build目录复制到指定目录例如/www
+2. nginx的server下指定配置：
+  location / {
+    root       /www;
+    try_files  $uri  $uri/  /index.html;
+  }

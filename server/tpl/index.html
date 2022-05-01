@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+	<base target="view" />
+	<title>编程笔记-个人技术分享</title>
+	<style>
+		html{
+			scrollbar-width: thin;
+		}
+		body {
+			margin: 0;
+			padding: 0;
+			font-size: 16px;
+		}
+		nav {
+			padding-top: 6px;
+			width: 30%;
+			height: calc(100vh - 36px);
+			overflow: hidden auto;
+			scrollbar-width: none;
+			word-break: break-all;
+		}
+		li {
+			list-style-type: none;
+			line-height: 24px;
+		}
+		ul {
+			margin: 0 0 0 24px;
+			padding: 0;
+		}
+		.sub-ul {
+			display: none;
+		}
+		.dir {
+			color: #f60;
+			cursor: pointer;
+		}
+		a {
+			text-decoration: none;
+		}
+		.file {
+			color: #06f;
+		}
+		.dir:hover, .file:hover, footer>a {
+			color: #999;
+		}
+		iframe {
+			border: none;
+			vertical-align: middle;
+		}
+		iframe[name='view'] {
+			position: absolute;
+			top: 0;
+			right: 0;
+			width: 70%;
+			height: calc(100vh - 30px);
+		}
+		button {
+			position: absolute;
+			top: 10px;
+			right: 30px;
+		}
+		footer {
+			line-height: 30px;
+			font-size: 12px;
+			text-align: center;
+			color: #999;
+		}
+	</style>
+	<script>
+		function newWindow() {
+			let src = document.querySelector("iframe").contentWindow.location.href;
+			window.open(
+					src,
+					"_blank",
+					"width=1100,height=600,top=100,left=500,menubar=no,toolbar=no,location=no,status=no,scrollbars=no"
+			);
+		}
+	</script>
+</head>
+<body>
+<nav>
+	<ul>
+		<li><a href="/static/sites.html">🏠</a></li>
+		{{.}}
+	</ul>
+</nav>
+<iframe name="view" src="/static/sites.html"></iframe>
+<button type="button" onclick="newWindow()">🔳</button>
+<footer>
+	© ~ <span id="year"></span> &nbsp;
+	<a href="https://beian.miit.gov.cn/" target="_blank">粤ICP备18035912号-1</a> &nbsp; &nbsp;
+	<iframe
+		src="https://ghbtns.com/github-btn.html?user=liyacn&repo=note&type=star&count=true" 
+		width="90"
+		height="20"
+		title="GitHub"
+	></iframe>
+</footer>
+<script>
+	let dirs = document.querySelectorAll(".dir");
+	for (let i = 0; i < dirs.length; i++) {
+		dirs[i].onclick = function () {
+			let icon = this.children[0];
+			let ul = this.parentNode.children[1];
+			if (ul.style.display !== "block") {
+				ul.style.display = "block";
+				icon.textContent = "📖";
+			} else {
+				ul.style.display = "none";
+				icon.textContent = "📘";
+			}
+		};
+	}
+	document.querySelector("#year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

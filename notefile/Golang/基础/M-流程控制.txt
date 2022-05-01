@@ -1,0 +1,197 @@
+条件语句需要开发者通过指定一个或多个条件，并通过测试条件是否为true来决定是否执行指定语句，并在条件为false的情况在执行另外的语句。
+
+Go编程语言中if语句的语法如下：
+	• 可省略条件表达式括号。
+	• 持初始化语句，可定义代码块局部变量。 
+	• 代码块左 括号必须在条件表达式尾部。
+	if [局部变量初始化;]布尔表达式 {
+		/* 在布尔表达式为true时执行，如果为false则不执行。 */
+	}
+
+if...else 语句的语法如下：
+	if [局部变量初始化;]布尔表达式 {
+		/* 在布尔表达式为true时执行 */
+	} else {
+		/* 在布尔表达式为false时执行 */
+	}
+不支持三元操作符(三目运算符) "a > b ? a : b"。
+
+if...else if...else 语句
+	if [局部变量初始化;]布尔表达式1 {
+		/* 在布尔表达式1为true时执行 */
+	} else if 布尔表达式2 {
+		/* 在布尔表达式1为true时执行 */
+	} else {
+		/* 布尔表达式1和2都为false时执行 */
+	}
+
+可以在if或else if语句中嵌入一个或多个if或else if语句。
+	if 布尔表达式1 {
+		/* 在布尔表达式1为true时执行 */
+		if 布尔表达式2 {
+			/* 在布尔表达式2为true时执行 */
+		}
+	}
+
+switch语句用于基于不同条件执行不同动作，每一个case分支都是唯一的，从上直下逐一测试，直到匹配为止。
+switch语句的语法如下：
+	switch var1 {
+	case val1:
+		...
+	case val2:
+		...
+	default:
+		... //以上无符合的条件时执行
+	}
+switch分支表达式var1可以是任意类型，而val1和val2则可以是同类型的任意值。
+类型不被局限于常量或整数，但必须是相同的类型；或者最终结果为相同类型的表达式。
+
+不同的case执行相同的逻辑，可以使用fallthrough强制执行后面的case代码，可以通过逗号分割多个测试的值。
+	var n = 1
+	switch n {
+	case 1:
+		fallthrough
+	case 2:
+		println("s")
+	case 3, 4:
+		println("m")
+	default:
+		println("l")
+	}
+
+省略条件表达式，可当 if...else if...else
+	switch {
+	case n <= 2:
+		println("s")
+	case n >= 3 && n <= 4:
+		println("m")
+	case n >= 5:
+		println("l")
+	}
+
+switch语句还可以被用于type-switch来判断某个interface变量中实际存储的变量类型。
+	switch i.(type) {
+	case int8, int16, int32, int64, int:
+		println("int")
+	case float32, float64:
+		println("float")
+	case string:
+		println("string")
+	case error:
+		println("error")
+	default:
+		println("other type")
+	}
+
+select是Go中的一个控制结构，类似于用于通信的switch语句。每个case必须是一个通信操作，要么是发送要么是接收。 
+select随机执行一个可运行的case。如果没有case可运行，它将阻塞，直到有case可运行。
+	select {
+	case communication-clause1:
+		statement(s)     
+	case communication-clause2:
+		statement(s)
+	default: /* 可选 */
+		statement(s)
+	}
+如果任意某个通信可以进行，它就执行；其他被忽略。如果有多个case都可以运行，select会随机公平地选出一个执行。其他不会执行。
+否则：如果有default子句，则执行该语句。如果没有default字句，select将阻塞，直到某个通信可以运行。
+
+用于超时判断：
+	select {
+	case data := <-resChan:
+		// do with data
+	case <-time.After(time.Second * 3):
+		println("time out")
+	}
+通知退出：
+	select {
+	case <-quit: //另一个协程中close(quit)时
+		...
+		println("quit")
+		return
+	default:
+	}
+
+Go语言的For循环有3中形式，只有其中的一种使用分号。
+	for init; condition; post { }
+	for condition { }
+	for { }
+	init： 一般为赋值表达式，给控制变量赋初值；
+	condition： 关系表达式或逻辑表达式，循环控制条件；
+	post： 一般为赋值表达式，给控制变量增量或减量。
+
+以下为 Go 语言嵌套循环的格式：
+	for [condition |  ( init; condition; increment ) | Range] {
+		for [condition |  ( init; condition; increment ) | Range] {
+			statement(s)
+		}
+		[statement(s)]
+	}
+
+range类似迭代器操作，for循环的range格式可以对slice、map、数组、字符串等进行迭代循环。
+迭代slice、数组、字符串、map语法：	for i[,v] := range items { /* statement */ }
+
+	s := "abc"
+	for i, v := range s {
+		println(i, v)
+	} /*输出
+	0 97
+	1 98
+	2 99
+	*/
+
+	n := []int{9, 8, 7}
+	for i, v := range n {
+		println(i, v)
+	} /*输出
+	0 9
+	1 8
+	2 7
+	*/
+
+	m := map[string]int{"A": 9, "B": 8, "C": 7}
+	for k, v := range m {
+		println(k, v)
+	} /*输出
+	A 9
+	B 8
+	C 7
+	*/
+
+注意，range会复制对象，以上的v是副本，指向原值应使用s[i],n[i],m[k]。
+
+range一个channel只返回一个值。
+	ch := make(chan int, 4)
+	ch <- 1
+	ch <- 2
+	close(ch)
+	for val := range ch {
+		println(val)
+	}
+
+v1.22新增range整数语法：
+for i := 0; i < 10; i++ {} 可简化为 for i := range 10 {}。
+
+v1.20以前for循环声明的变量只创建一次，并在每次迭代中更新。
+v1.22以后，循环的每次迭代都会创建新变量，以避免意外的共享错误。
+
+循环控制语句可以控制循环体内语句的执行过程。GO语言支持以下几种循环控制语句：goto、break、continue
+	1.三个语句都可以配合标签(label)使用
+	2.标签名区分大小写，定以后若不使用会造成编译错误
+	3.continue、break配合标签(label)可用于多层循环跳出
+	4.goto是调整执行位置，与continue、break配合标签(label)的结果并不相同
+
+goto语句可以无条件地转移到过程中指定的行，通常与条件语句配合使用，可用来实现条件转移，构成循环，跳出循环体等功能。
+但是，在结构化程序设计中一般不主张使用goto语句，以免造成程序流程的混乱，使理解和调试程序都产生困难。
+goto语法格式如下：
+	goto label
+	..
+	.
+	label:
+		statement
+
+break语句经常用于中断当前for循环。
+在for多层嵌套时，有时候需要直接跳出所有嵌套循环，这时候就可以用到go的label-break特征了。
+label要写在for循环的开始而不是结束的地方。
+continue语句跳过当前循环的剩余语句，然后继续进行下一轮循环，会触发for增量语句的执行。
+break可用于for、switch、select，而continue仅能用于for循环。

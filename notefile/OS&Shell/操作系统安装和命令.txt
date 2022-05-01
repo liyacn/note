@@ -1,0 +1,125 @@
+系统用户主目录：
+    windows: C:\Users\<user>
+    linux: /home/<user>
+    mac: /Users/<user>
+
+hosts文件位置：
+    windows: C:\Windows\System32\drivers\etc
+    linux/mac: /etc/hosts
+
+========== ========== ========== ========== ==========
+
+祼机安装windows系统：
+U盘进入PE，先用虚拟光驱加载ISO镜像，把要装系统的磁盘格式化。
+将ISO里面的 boot sources bootmgr 拷到该盘，打开windows开始菜单输入以下命令并回车：
+c:\boot\bootsect.exe /nt60 c:
+快速闪过小黑窗，先拔U盘再重启，进入安装程序。
+
+系统文件夹Videos,Pictures,Documents,Downloads,Music,Desktop等默认位于C:\Users\<用户名>\
+可通过选中属性>位置，修改其指向的目录。
+
+Windows创建软连接：
+mklink /j 虚拟的路径 指向原路径
+mklink /j D:\xxx\yyy E:\aaa\bbb
+
+开机自动在后台运行：
+将需要执行的程序、脚本或其快捷方式添加到以下目录即可
+C:\Users\<用户名>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+
+以管理员权限修改配置文件：
+资源窗口点击“文件”->“打开powershell”->“以管理员身份打开”
+在powershell窗口执行
+notepad 文件名
+即可在打开的记事本窗口编辑保存
+
+命令运行程序需将.exe所在目录添加到系统环境变量Path
+计算机>设置>关于>高级系统设置>环境变量
+
+========== ========== ========== ========== ==========
+
+Homebrew官网： https://brew.sh/
+
+brew update #更新brew
+brew search TEXT|/REGEX/ #搜索软件包
+brew info [FORMULA|CASK...] #查看软件包信息
+brew install FORMULA|CASK... #安装软件包
+brew upgrade [FORMULA|CASK...] #更新所有/指定软件包
+brew uninstall FORMULA|CASK... #卸载指定的软件包，--force彻底卸载包括旧版本
+brew list [FORMULA|CASK...] #查看本机已安装软件包
+brew outdated #查看可更新的软件包列表
+brew cleanup -n #列出需要清理的包
+brew cleanup [FORMULA|CASK...] #清理所有/指定的过时软件
+brew config #查看配置信息
+brew services list #列出正在运行的服务
+brew services start service_name #启动指定服务
+brew services stop service_name #停止指定服务
+brew services restart service_name #重启指定服务
+
+brew install mysql #安装mysql
+mysql_secure_installation #设置root密码及登录配置
+brew install nginx #安装nginx到/opt/homebrew/etc/nginx
+
+彻底删除JetBrainsIDE
+~/Library/Preferences/
+~/Library/Caches/
+~/Library/Application\ Support/
+~/Library/Logs/
+
+========== ========== ========== ========== ==========
+
+Ubuntu桌面版安装只需设置以下三个分区：不再需要boot分区
+/ 主分区 ext4 10G以上
+/swap 逻辑分区 swap 8G（同内存大小）
+/home 逻辑分区 ext4 尽可能大
+
+安装五笔输入法，只需在设置>区域与语言，添加输入源即可。
+
+下载.deb文件安装软件，进入到所在目录执行命令：
+sudo dpkg -i *.deb
+
+查看定时任务：
+crontab -l
+编辑定时任务：
+crontab -e
+写入一行格式为： 分 时 日 月 周 命令
+例如： 45 22 * * * cd /home/ubuntu/github/note;git pull
+删除用户的crontab文件：
+crontab -r
+系统的crontab文件通常位于/etc/crontab，以root用户的身份执行任务。
+
+apt是一个在Debian和Ubuntu中的Shell软件包管理器。apt命令执行需要超级管理员权限。
+apt [options] [command] [package ...]
+	options：-h（帮助），-y（当安装过程提示选择全部为"yes"），-q（不显示安装的过程）等等。
+	command：要进行的操作。
+	package：安装的包名。
+apt常用命令
+	列出所有可更新的软件清单命令：sudo apt update
+	升级软件包：sudo apt upgrade
+	可以将两个命令组合起来一键更新：sudo apt update && sudo apt upgrade -y
+	列出可更新的软件包及版本信息：apt list --upgradeable
+	升级软件包，升级前先删除需要更新软件包：sudo apt full-upgrade
+	安装指定的软件命令：sudo apt install <package_name>
+	安装一个软件包，但如果软件包已经存在，则不要升级它，可以使用 –no-upgrade
+	如果只想升级，不要安装可以使用 --only-upgrade
+	如果需要安装指定版本：sudo apt install <package_name>=<version_number>
+	安装多个软件包：sudo apt install <package_1> <package_2> <package_3>
+	更新指定的软件命令：sudo apt update <package_name>
+	显示软件包具体信息：sudo apt show <package_name>
+	删除软件包命令：sudo apt remove <package_name>
+	清理不再使用的依赖和库文件: sudo apt autoremove
+	移除软件包及配置文件: sudo apt purge <package_name>
+	查找软件包命令： sudo apt search <keyword>
+	列出所有已安装的包：apt list --installed
+	列出所有已安装的包的版本信息：apt list --all-versions
+桌面版系统可以通过：软件和更新>下载自>其他站点>选择一个源并保存，点击重新载入后会更新source.list
+
+安装MySQL
+sudo apt install mysql-server
+sudo cat /etc/mysql/debian.cnf #查看初始随机密码
+检验：mysql -u 上句user -p 按提示输入上句password，登录mysql
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root.pwd';
+FLUSH PRIVILEGES; #刷新MySQL的系统权限
+查看：service mysql status
+启动：sudo service mysql start
+停止：sudo service mysql stop
+重启：sudo service mysql restart

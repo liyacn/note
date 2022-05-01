@@ -1,0 +1,49 @@
+各编程语言的正则表达式略有差异，参考：
+Go: https://pkg.go.dev/regexp/syntax
+C#: https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference
+JS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions
+
+修饰符flags
+Go：(?imsU)pattern
+C#: (?imnsx)pattern
+JS：/pattern/dgimsuvy
+
+========== ========== ========== ========== ==========
+
+相同优先级的从左到右进行运算，不同优先级的运算先高后低。
+各种操作符的优先级从高到低如下：
+	\  转义符 
+	(), (?:), (?=), []  圆括号和方括号 
+	*, +, ?, {n}, {n,}, {n,m}  限定符 
+	^, $, \任意元字符  位置和顺序 
+	|  “或”操作
+
+
+========== ========== 常用正则 ========== ==========
+
+合法变量名（字母数字下划线）：^\w+$
+手机号（1开头11位数）：^1\d{10}$
+16进制颜色（#开头，3或6位16进制数）：^#([0-9a-f]{3}){1,2}?$
+域名（以.号分隔的2~5段，1~4段头尾字母数字可穿插不连续-号，末段2~10字母）：^(([a-z0-9]+-?)*[a-z0-9]+\.){1,4}[a-z]{2,10}$
+网址（协议://域名）：^https?://(([a-z0-9]+-?)*[a-z0-9]+\.){1,4}[a-z]{2,10}$ (JS字面量中/前需要加转义斜杠\)
+邮箱用户名（头尾字母数字，可穿插不连续符号._-）：^([a-z0-9]+[._-]?)*[a-z0-9]+$
+邮箱（用户名@域名）：^([a-z0-9]+[._-]?)*[a-z0-9]+@(([a-z0-9]+-?)*[a-z0-9]+\.){1,4}[a-z]{2,10}$
+flag加i忽略大小写，或在小写字母集合添加大写字母集合。
+
+unicode字符十六进制编码区段： http://www.unicode.org/charts/
+	CJK扩展A 3400–4DBF
+	基本汉字 4E00–9FFF
+	CJK扩展B 20000–2A6DF
+	CJK扩展C 2A700–2B739(2B73F)
+	CJK扩展D 2B740–2B81D(2B81F)
+	CJK扩展E 2B820–2CEA1(2CEAF)
+	CJK扩展F 2CEB0–2EBE0(2EBEF)
+	CJK扩展I 2EBF0–2EE5D(2EEDF)
+	CJK扩展G 30000–3134A(3134F)
+	CJK扩展H 31350–323AF
+未填满的占位仍有可能扩充
+
+2~6个基本汉字：
+	Go： "^[\u4E00-\u9FFF]{2,6}$"
+	C#:  @"^[\u4E00-\u9FFF]{2,6}$"
+	JS： /^[\u4E00-\u9FFF]{2,6}$/
