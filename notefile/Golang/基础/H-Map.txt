@@ -1,0 +1,31 @@
+map是一种无序的基于key-value的数据结构，Go语言中的map是引用类型，必须初始化才能使用。
+
+Go语言中 map的定义语法如下
+	map[KeyType]ValueType
+其中，KeyType表示键的类型，ValueType表示键对应的值的类型。
+键必须是支持相等运算符的类型，如number、string、pointer、array、struct，以及对应的interface。值可以是任意类型，没有限制。
+
+map类型的变量默认初始值为nil，需要使用make()函数来分配内存。语法为：
+	make(map[KeyType]ValueType, [cap])
+其中cap表示map的容量，该参数虽然不是必须的，但是应该在初始化map的时候就为其指定一个合适的容量。
+
+map也支持在声明的时候填充元素，如
+	var m = map[string]int{"a": 1, "b": 2}
+
+修改或添加键值对到map：
+	m[key] = value
+
+从m中删除一组键值对（删除不存在的key不会报错）：
+	delete(m, key)
+
+判断某个键是否存在：
+	value, ok := m[key]
+当key存在时ok为true，value为对应key的值；当key不存在时，ok为false，value为对应类型的零值。
+
+map的遍历（注意：遍历map时的元素顺序与添加键值对的顺序无关）
+	for k := range m {
+		println(k, m[k])
+	}
+	for k, v := range m {
+		println(k, v)
+	}

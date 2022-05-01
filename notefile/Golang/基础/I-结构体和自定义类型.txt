@@ -1,0 +1,131 @@
+可用type在全局或函数内定义新类型，可以基于内置的基本类型定义，也可以通过struct定义。
+	type MyInt int // MyInt就是一种新的类型，它具有int的特性
+新类型不是原类型的别名，除拥有相同数据存储结构外，它们之间没有任何关系，不会持有原类型任何信息。
+
+类型别名：
+	type TypeAlias = Type // TypeAlias只是Type的别名，本质上TypeAlias与Type是同一个类型。
+rune和byte就是类型别名，他们的定义如下：
+	type byte = uint8
+	type rune = int32
+
+Go语言中没有“类”的概念，也不支持“类”的继承等面向对象的概念。
+Go语言中通过结构体的内嵌再配合接口比面向对象具有更高的扩展性和灵活性。
+Go语言中通过struct来实现面向对象。
+
+type和struct关键字来定义结构体：
+	type 类型名 struct {
+		字段名 字段类型
+		字段名 字段类型
+		…
+	}
+	1.类型名：标识自定义结构体的名称，在同一个包内不能重复。
+	2.字段名：表示结构体字段名。结构体中的字段名必须唯一。
+	3.字段类型：表示结构体字段的具体类型。
+例如：
+	type person struct {
+		name string
+		city string
+		age  int8
+	}
+同样类型的字段也可以写在一行
+	type person1 struct {
+		name, city string
+		age        int8
+	}
+
+在定义一些临时数据结构等场景下还可以使用匿名结构体。
+	var user struct {
+		name string
+		age  int
+	}
+
+结构体允许其成员字段在声明时没有字段名而只有类型，这种没有名字的字段就称为匿名字段。
+	type Person struct {
+		string
+		int
+	}
+匿名字段默认采用类型名作为字段名，结构体要求字段名称必须唯一，因此一个结构体中同种类型的匿名字段只能有一个。
+
+一个结构体中可以嵌套包含另一个结构体或结构体指针。
+	type Person struct {
+		name string
+		age  int
+		addr string
+	}
+	type Employee struct {
+		Person //匿名字段
+		salary int
+		int           //用内置类型作为匿名字段
+		addr   string //类似于重载
+	}
+
+不能同时嵌入某一类型和其指针类型，因为它们名字相同。
+	type Resource struct {
+		id int
+	}
+	type User struct {
+		*Resource
+		// Resource // Error: duplicate field Resource
+		name string
+	}
+
+只有当结构体实例化时，才会真正地分配内存。也就是必须实例化后才能使用结构体的字段。
+	var 结构体实例 结构体类型
+
+使用键值对对结构体进行初始化时，键对应结构体的字段，值对应该字段的初始值。
+	var p = person{
+		name: "Tom",
+		city: "北京",
+	}
+也可以对结构体指针进行键值对初始化，例如：
+	var p = &person{
+		name: "Tom",
+		age:  18,
+	}
+当某些字段没有初始值的时候，该字段可以不写。此时，没有指定初始值的字段的值就是该字段类型的零值。
+
+初始化结构体的时候可以简写，不写键，直接写值：
+	var p = &person{
+		"Tom",
+		"北京",
+		18,
+	}
+这种方式必须初始化结构体的所有字段，初始值的填充顺序必须与字段在结构体中的声明顺序一致。
+
+可以通过使用new关键字对结构体进行实例化，得到的是结构体的地址。
+
+通过.来访问结构体的字段（成员变量）,例如p.name和p.age等。varName.field 或 (*varName).field
+结构体中字段大写开头表示可公开访问，小写表示私有（仅在定义当前结构体的包中可访问）。
+嵌套匿名结构体字段访问方式也是通过"."来连接，相同字段采用最外层优先访问，类似于重载。
+
+内存对齐影响struct的大小，struct的字段顺序影响struct的大小，所以有时候合理的字段顺序可以减少内存的开销。
+type user1 struct {
+	b byte
+	i int32
+	j int64
+}
+type user2 struct {
+	b byte
+	j int64
+	i int32
+}
+func main() {
+	var u1 user1
+	var u2 user2
+	println(unsafe.Sizeof(u1)) // 16
+	println(unsafe.Sizeof(u2)) // 24
+}
+
+空结构节省内存，如用来实现set数据结构，或者实现没有"状态"只有方法的"静态类"。
+
+tag是结构体的元信息，可以在运行的时候通过反射的机制读取出来。
+tag在结构体字段的后方定义，由一对反引号包裹起来，具体的格式如下：
+	`key1:"value1" key2:"value2"`
+结构体标签由一个或多个键值对组成。键与值使用冒号分隔，值用双引号括起来。键值对之间使用一个空格分隔。
+在转换成其它数据格式的时候，会使用其中特定的字段作为键值。
+	type User struct {
+		UserId   int    `json:"user_id" bson:"user_id"`
+		UserName string `json:"user_name" bson:"user_name"`
+	}
+json的声明是用于json序列化和解析时使用的，bson的声明将数据存储到mongodb使用的。
+常用的tag还有yaml,xml,asn1,db等，分别用于不同格式的序列化和解析。

@@ -1,0 +1,94 @@
+"crypto/x509"包解析X.509编码的证书和密钥。
+
+========== ========== ========== ========== ==========
+
+CertPool代表一个证书集合/证书池。
+
+func NewCertPool() *CertPool
+创建一个新的、空的CertPool
+
+func SystemCertPool() (*CertPool, error)
+返回系统证书池的副本。系统证书池中的新更改可能不会反映在后续调用中。
+
+func (s *CertPool) AddCert(cert *Certificate)
+向s中添加一个证书
+
+func (s *CertPool) AppendCertsFromPEM(pemCerts []byte) (ok bool)
+尝试解析一系列PEM编码的证书。它将找到的任何证书都加入s中，并报告是否成功解析了任何证书。
+
+func (s *CertPool) Clone() *CertPool
+返回一个复制的CertPool
+
+func (s *CertPool) Equal(other *CertPool) bool
+报告s和other是否等价
+
+func SetFallbackRoots(roots *CertPool)
+设置证书验证期间要使用的根，如果未指定自定义根，并且平台验证器或系统证书池不可用。roots为或者调用多次会panic
+
+========== ========== ========== ========== ==========
+
+Certificate代表一个X.509证书
+
+func ParseCertificate(der []byte) (*Certificate, error)
+从给定的数据解析单个证书
+
+func ParseCertificates(der []byte) ([]*Certificate, error)
+从给定的数据解析单个或多个证书。证书之间必须没有任何填充。
+
+func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature []byte) error
+验证签名是否是从c的公钥签名的有效签名。
+
+func (c *Certificate) CheckSignatureFrom(parent *Certificate) error
+验证c上的签名是否来自父级的有效签名。
+
+func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err error)
+尝试在opts.Roots中构建从c到证书的一个或多个链来验证c。
+如果成功，它将返回一个或多个链，其中链的第一个元素是c，最后一个元素来自opts.Roots。
+
+func (c *Certificate) VerifyHostname(h string) error
+如果c是指定主机的有效证书，则VerifyHostname返回nil。否则，它将返回描述不匹配的错误。
+
+func (c *Certificate) Equal(other *Certificate) bool
+
+========== ========== ========== ========== ==========
+
+CertificateRequest代表一个PKCS#10的证书请求。
+func ParseCertificateRequest(asn1Data []byte) (*CertificateRequest, error)
+func (c *CertificateRequest) CheckSignature() error
+
+RevocationList包含用于使用CreateRevocationList创建X.509 v2证书吊销列表的字段。
+func ParseRevocationList(der []byte) (*RevocationList, error)
+func (rl *RevocationList) CheckSignatureFrom(parent *Certificate) error
+
+基于模板创建新的X.509的v3证书。
+func CreateCertificate(rand io.Reader, template, parent *Certificate, pub, priv any) ([]byte, error)
+func CreateCertificateRequest(rand io.Reader, template *CertificateRequest, priv any) (csr []byte, err error)
+func CreateRevocationList(rand io.Reader, template *RevocationList, issuer *Certificate, ...) ([]byte, error)
+
+func MarshalECPrivateKey(key *ecdsa.PrivateKey) ([]byte, error)
+将EC私钥转换为SEC#1、ASN.1 DER格式。通常编码在“EC PRIVATE KEY”类型的PEM块中。
+
+func MarshalPKCS1PrivateKey(key *rsa.PrivateKey) []byte
+将RSA私钥转换为PKCS#1、ASN.1 DER格式。通常编码在“RSA PRIVATE KEY”类型的PEM块中。
+
+func MarshalPKCS1PublicKey(key *rsa.PublicKey) []byte
+将RSA公钥转换为PKCS#1、ASN.1 DER格式。通常编码在“RSA PUBLIC KEY”类型的PEM块中。
+
+func MarshalPKCS8PrivateKey(key any) ([]byte, error)
+将私钥转换为PKCS#8、ASN.1 DER格式。通常编码在“PRIVATE KEY”类型的PEM块中。
+支持的密钥类型：*rsa.PrivateKey,*ecdsa.PrivateKey,ed25519.PrivateKey(非指针),*ecdh.PrivateKey。
+不支持的密钥类型将返回错误。
+
+func MarshalPKIXPublicKey(pub any) ([]byte, error)
+将公钥转换为PKIX、ASN.1 DER格式。通常编码在“PUBLIC KEY”类型的PEM块中。
+支持的密钥类型：*rsa.PublicKey,*ecdsa.PublicKey,ed25519.PublicKey(非指针),*ecdh.PublicKey。
+不支持的密钥类型将返回错误。
+
+以上五个Marshal*方法对应的从DER格式解析密钥的方法
+func ParseECPrivateKey(der []byte) (*ecdsa.PrivateKey, error)
+func ParsePKCS1PrivateKey(der []byte) (*rsa.PrivateKey, error)
+func ParsePKCS1PublicKey(der []byte) (*rsa.PublicKey, error)
+func ParsePKCS8PrivateKey(der []byte) (key any, err error)
+func ParsePKIXPublicKey(der []byte) (pub any, err error)
+
+DER格式输出为文本时通常编码在PEM块中或者直接base64编码。

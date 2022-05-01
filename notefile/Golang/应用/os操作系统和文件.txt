@@ -1,0 +1,294 @@
+"os"包提供了操作系统函数的不依赖平台的接口。
+"os"包的接口规定为在所有操作系统中都是一致的。非公用的属性可以从操作系统特定的"syscall"包获取。
+
+========== ========== Err ========== ==========
+
+预定义错误变量
+var(
+	ErrInvalid     = fs.ErrInvalid    // "invalid argument"
+	ErrPermission  = fs.ErrPermission // "permission denied"
+	ErrExist       = fs.ErrExist      // "file already exists"
+	ErrNotExist    = fs.ErrNotExist   // "file does not exist"
+	ErrClosed      = fs.ErrClosed     // "file already closed"
+	ErrProcessDone = errors.New("os: process already finished")
+	// 等价定义：
+	ErrNoDeadline       = errors.New("file type does not support deadline")
+	ErrDeadlineExceeded = errors.New("i/o timeout")
+)
+
+错误类型
+type PathError = fs.PathError 记录一个错误，以及导致错误的路径。
+SyscallError 记录某个系统调用出现的错误。
+LinkError 记录在Link、Symlink、Rename系统调用时出现的错误，以及导致错误的路径。
+
+========== ========== sys & proc ========== ==========
+
+var Args []string
+全局变量Args保管了命令行参数，第一个是程序名，在init函数中初始化。
+如果启动命令是 "./app -env=dev" 则Args为["./app","-env=dev"]
+
+func Hostname() (name string, err error)
+返回内核提供的主机名
+
+func Getpagesize() int { return syscall.Getpagesize() }
+返回底层的系统内存页的尺寸
+
+func TempDir() string
+返回一个用于保管临时文件的默认目录。
+
+func UserHomeDir() (string, error)
+返回当前用户的主目录。
+
+func UserConfigDir() (string, error)
+返回特定用户配置数据的默认根目录。
+
+func UserCacheDir() (string, error)
+返回特定用户缓存数据的默认根目录。
+
+func Getuid() int { return syscall.Getuid() }
+返回调用者的用户ID。windows下返回-1。
+
+func Geteuid() int { return syscall.Geteuid() }
+返回调用者的有效用户ID。windows下返回-1。
+
+func Getgid() int { return syscall.Getgid() }
+返回调用者的组ID。windows下返回-1。
+
+func Getegid() int { return syscall.Getegid() }
+返回调用者的有效组ID。windows下返回-1。
+
+func Getgroups() ([]int, error) //syscall.Getgroups()
+返回调用者所属的所有用户组的组ID。windows下返回syscall.EWINDOWS。
+
+func Exit(code int) //syscall.Exit(code)
+让当前程序以给出的状态码code退出。一般来说，状态码0表示成功，非0表示出错。
+程序会立刻终止，defer的函数不会被执行。
+
+func Getpid() int { return syscall.Getpid() }
+返回调用者所在进程的进程ID。
+
+func Getppid() int { return syscall.Getppid() }
+返回调用者所在进程的父进程的进程ID。
+
+Signal类型代表一个操作系统信号。一般其底层实现是依赖于操作系统的：在Unix中，它是syscall.Signal类型。
+var (
+    Interrupt Signal = syscall.SIGINT
+    Kill      Signal = syscall.SIGKILL
+)
+仅定义了肯定会被所有操作系统提供的信号，Interrupt（中断信号）和Kill（强制退出信号）。
+
+========== ========== env ========== ==========
+
+func Environ() []string { return syscall.Environ() }
+返回表示环境变量的格式为"key=value"的字符串的切片拷贝。
+
+func Expand(s string, mapping func(string) string) string
+替换s中的${var}或$var为mapping(var)。例如，os.ExpandEnv(s)等价于os.Expand(s, os.Getenv)
+
+func ExpandEnv(s string) string { return Expand(s, Getenv) }
+替换s中的${var}或$var为名为var 的环境变量的值。引用未定义环境变量会被替换为空字符串。
+
+func Getenv(key string) string //syscall.Getenv(key)
+检索并返回名为key的环境变量的值。如果不存在该环境变量会返回空字符串。
+
+func LookupEnv(key string) (string, bool) //syscall.Getenv(key)
+检索并返回名为key的环境变量的值。如果存在则返回其值和true，不存在则返回""和false。
+
+func Setenv(key, value string) error //syscall.Setenv(key,value)
+设置名为key的环境变量。如果出错会返回该错误。
+
+func Unsetenv(key string) error { return syscall.Unsetenv(key) }
+删除单个环境变量。
+
+func Clearenv() { syscall.Clearenv() }
+删除所有环境变量。
+
+========== ========== dir & file ========== ==========
+
+type FileInfo = fs.FileInfo
+type DirEntry = fs.DirEntry
+type FileMode = fs.FileMode // type FileMode uint32
+
+type FileInfo interface { //fs包定义
+    Name() string       // 文件的名字（不含扩展名）
+    Size() int64        // 普通文件返回值表示其大小；其他文件的返回值含义各系统不同
+    Mode() FileMode     // 文件的模式位
+    ModTime() time.Time // 文件的修改时间
+    IsDir() bool        // 等价于Mode().IsDir()
+    Sys() any   // 底层数据来源（可以返回nil）
+}
+
+type DirEntry interface { //fs包定义
+	Name() string            //文件的名称，非完整路径
+	IsDir() bool             //是否目录
+	Type() FileMode          //权限位
+	Info() (FileInfo, error) //文件或子目录的FileInfo
+}
+
+const DevNull = "/dev/null"
+操作系统空设备的名字。在类似Unix的操作系统中，是"/dev/null"；在Windows中，为"NUL"。
+
+func NewFile(fd uintptr, name string) *File
+使用给出的Unix文件描述符和名称创建一个文件。
+
+var (
+    Stdin  = NewFile(uintptr(syscall.Stdin), "/dev/stdin")
+    Stdout = NewFile(uintptr(syscall.Stdout), "/dev/stdout")
+    Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
+)
+Stdin、Stdout和Stderr是指向标准输入、标准输出、标准错误输出的文件描述符。
+
+func Stat(name string) (FileInfo, error)
+返回一个描述name指定的文件对象的FileInfo。如果出错，返回的错误值为*PathError类型。
+如果指定的文件对象是一个符号链接，返回的FileInfo描述该符号链接指向的文件的信息，会尝试跳转该链接。
+
+func Lstat(name string) (FileInfo, error)
+与Stat类似但不会试图跳转符号链接。
+
+func SameFile(fi1, fi2 FileInfo) bool
+返回fi1和fi2是否在描述同一个文件。
+例如，在Unix这表示二者底层结构的设备和索引节点是相同的；在其他系统中可能是根据路径名确定的。
+SameFile应只使用本包Stat函数返回的FileInfo类型值为参数，其他情况下，它会返回假。
+
+func Truncate(name string, size int64) error
+修改name指定的文件的大小。如果出错，会返回*PathError底层类型的错误。
+如果该文件为一个符号链接，将修改链接指向的文件的大小。
+
+func Link(oldname, newname string) error
+创建一个名为newname指向oldname的硬链接。如果出错，会返回*LinkError底层类型的错误。
+
+func Symlink(oldname, newname string) error
+创建一个名为newname指向oldname的符号链接。如果出错，会返回*LinkError底层类型的错误。
+
+func Readlink(name string) (string, error)
+获取name指定的符号链接文件指向的文件的路径。如果出错，会返回*PathError底层类型的错误。
+
+func Remove(name string) error
+删除name指定的文件或空目录。如果出错，会返回*PathError底层类型的错误。
+
+func RemoveAll(path string) error
+删除path指定的文件，或目录及它包含的任何下级对象。
+它会尝试删除所有东西，除非遇到错误并返回。如果指定的对象不存在，会返回nil而不返回错误。
+
+func Rename(oldpath, newpath string) error
+修改一个文件的名字，移动一个文件。可能会有一些个操作系统特定的限制。
+
+func OpenFile(name string, flag int, perm FileMode) (*File, error)
+打开指定名称的文件。如果操作成功，返回的文件对象可用于I/O。如果出错，错误底层类型是*PathError。
+
+func Open(name string) (*File, error) { return OpenFile(name, O_RDONLY, 0) }
+func Create(name string) (*File, error) { return OpenFile(name, O_RDWR|O_CREATE|O_TRUNC, 0666) }
+
+func CreateTemp(dir, pattern string) (*File, error)
+CreateTemp在目录dir中创建一个新的临时文件，打开该文件进行读写，并返回结果文件。
+文件名是通过采用模式并在末尾添加随机字符串生成的。如果模式包含一个“*”，则随机字符串将替换最后一个“*”。
+如果dir是空字符串，CreateTemp将使用TempDir返回的临时文件的默认目录。
+同时调用CreateTemp的多个程序或goroutine将不会选择同一个文件。
+
+func (f *File) Close() error
+关闭文件，使文件不能用于读写。
+
+func (f *File) Chdir() error
+将当前工作目录修改为f，f必须是一个目录。如果出错，错误底层类型是*PathError。
+
+func (f *File) Chmod(mode FileMode) error
+修改文件的模式。如果出错，错误底层类型是*PathError。
+
+func (f *File) Chown(uid, gid int) error
+修改文件的用户ID和组ID。如果出错，错误底层类型是*PathError。
+
+func (f *File) Fd() uintptr
+返回与文件f对应的整数类型的Unix文件描述符。
+
+func (f *File) Stat() (fi FileInfo, err error)
+返回描述文件f的FileInfo类型值。如果出错，错误底层类型是*PathError。
+
+func (f *File) Name() string
+返回（提供给Open/Create等方法的）文件名称。
+
+func (f *File) Seek(offset int64, whence int) (ret int64, err error)
+设置下一次读/写的位置。它返回新的偏移量（相对开头）和可能的错误。
+offset为相对偏移量，而whence决定相对位置：0为相对文件开头，1为相对当前位置，2为相对文件结尾。
+
+func (f *File) Read(b []byte) (n int, err error)
+从f中读取最多len(b)字节数据并写入b。它返回读取的字节数和可能遇到的任何错误。
+文件终止标志是读取0个字节且返回值err为io.EOF。
+
+func (f *File) ReadAt(b []byte, off int64) (n int, err error)
+从指定的位置（相对于文件开始位置）读取len(b)字节数据并写入b。它返回读取的字节数和可能遇到的任何错误。
+当n<len(b)时，本方法总是会返回错误；如果是因为到达文件结尾，返回值err会是io.EOF。
+
+func (f *File) Truncate(size int64) error
+改变文件的大小，它不会改变I/O的当前位置。如果截断文件，多出的部分就会被丢弃。如果出错，错误底层类型是*PathError。
+
+func (f *File) Write(b []byte) (n int, err error)
+向文件中写入len(b)字节数据。它返回写入的字节数和可能遇到的任何错误。
+如果返回值n!=len(b)，本方法会返回一个非nil的错误。
+
+func (f *File) WriteString(s string) (n int, err error)
+类似Write，但接受一个字符串参数。
+
+func (f *File) WriteAt(b []byte, off int64) (n int, err error)
+在指定的位置（相对于文件开始位置）写入len(b)字节数据。它返回写入的字节数和可能遇到的任何错误。
+如果返回值n!=len(b)，本方法会返回一个非nil的错误。
+
+func (f *File) Sync() error
+递交文件的当前内容进行稳定的存储。一般来说，这表示将文件系统的最近写入的数据在内存中的拷贝刷新到硬盘中稳定保存。
+
+func Pipe() (r *File, w *File, err error)
+返回一对关联的文件对象。从r的读取将返回写入w的数据。本函数会返回两个文件对象和可能的错误。
+
+func (f *File) ReadDir(n int) ([]DirEntry, error)
+读取目录f的内容，返回一个有n个成员的[]FileInfo，这些FileInfo是被Lstat返回的，采用目录顺序。
+对本函数的下一次调用会返回上一次调用剩余未读取的内容的信息。
+如果n>0，ReadDir最多返回n条DirEntry记录。如果ReadDir返回一个空切片，它将返回一个解释原因的错误。在目录的末尾，错误是io.EOF。
+如果n<=0，ReadDir返回目录中剩余的所有DirEntry记录。当它成功时，它返回一个nil错误（不是io.EOF）。
+
+func (f *File) Readdirnames(n int) (names []string, err error)
+与ReadDir类似，返回一个有n个成员的[]string，
+
+func ReadFile(name string) ([]byte, error)
+读取指定文件并返回内容。如果出错，会返回*PathError底层类型的错误。
+
+func WriteFile(name string, data []byte, perm FileMode) error
+将数据写入指定文件。如果文件不存在则使用perm创建。如果文件已存在，会在写入之前清空，并不会更改权限。
+
+func ReadDir(name string) ([]DirEntry, error)
+读取指定目录，返回按文件名排序的所有条目。如果发生错误，返回错误发生前能够读取的条目和错误。
+
+func Mkdir(name string, perm FileMode) error
+使用指定的权限和名称创建一个目录。如果出错，会返回*PathError底层类型的错误。
+
+func MkdirAll(path string, perm FileMode) error
+使用指定的权限和名称创建一个目录，包括任何必要的上级目录，并返回nil，否则返回错误。
+权限位perm会应用在每一个被本函数创建的目录上。
+如果path指定了一个已经存在的目录，MkdirAll不做任何操作并返回nil。
+
+func MkdirTemp(dir, pattern string) (string, error)
+创建一个新的临时目录，并返回新目录的路径名。
+新目录的名称是通过在模式的末尾添加一个随机字符串生成的。如果模式包含“*”，则随机字符串将替换最后一个“*”。
+如果dir是空字符串，则MkdirTemp使用TempDir返回的临时文件的默认目录。
+同时调用MkdirTemp的多个程序或goroutine将不会选择同一目录。
+
+func Getwd() (dir string, err error) //syscall.Getwd()
+返回一个对应当前工作目录的根路径。如果当前目录可以经过多条路径抵达，Getwd会返回其中一个。
+
+func Chdir(dir string) error //syscall.Chdir(dir)
+将当前工作目录修改为dir指定的目录。如果出错，会返回*PathError底层类型的错误。
+
+func Chown(name string, uid, gid int) error //syscall.Chown(name, uid, gid)
+修改name指定的文件对象的用户id和组id。如果出错，会返回*PathError底层类型的错误。
+如果name指定的文件是一个符号链接，它会修改该链接的目的地文件的用户id和组id。
+如果uid或gid为-1，表示不修改该值。
+
+func Lchown(name string, uid, gid int) error //syscall.Lchown(name, uid, gid)
+修改name指定的文件对象的用户id和组id。如果出错，会返回*PathError底层类型的错误。
+如果name指定的文件是一个符号链接，它会修改该符号链接自身的用户id和组id。
+
+func Chtimes(name string, atime time.Time, mtime time.Time) error
+修改name指定的文件对象的访问时间和修改时间，类似Unix的utime()或utimes()函数。
+底层的文件系统可能会截断/舍入时间单位到更低的精确度。如果出错，会返回*PathError底层类型的错误。
+
+func Chmod(name string, mode FileMode) error //syscall.Chmod(name,mode)
+修改name指定的文件对象的mode。如果出错，会返回*PathError底层类型的错误。
+如果name指定的文件是一个符号链接，它会修改该链接的目的地文件的mode。

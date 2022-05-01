@@ -1,0 +1,160 @@
+MySQL下载地址： https://dev.mysql.com/downloads/mysql/
+可视化管理工具Workbench下载地址： https://dev.mysql.com/downloads/workbench/
+参考手册： https://dev.mysql.com/doc/refman/8.0/en/
+
+========== ========== 常用命令 ========== ==========
+
+mysql -u user_name -p db_name #账号密码登录
+mysql> SHOW CHARACTER SET; #查看支持的字符集
+mysql> SHOW COLLATION WHERE Charset='utf8mb4'; #查看排序规则
+
+mysql> SHOW DATABASES; #查看所有库
+mysql> SHOW CREATE DATABASE db_name; #查看建库语句
+mysql> USE db_name; #进入指定库
+mysql> SHOW TABLES; #查看当前库所有表和视图
+mysql> SHOW TABLES FROM db_name; #查看指定库所有表和视图
+mysql> SHOW CREATE TABLE tb_name; #查看建表语句
+mysql> DESC tb_name; #查看表结构
+
+========== ========== 导出备份/导入还原 ========== ==========
+
+mysqldump客户端实用程序执行逻辑备份，生成一组SQL语句，可以执行这些语句来重现原始数据库对象定义和表数据。
+它转储一个或多个MySQL数据库，以便备份或传输到另一个SQL服务器。
+mysqldump命令还可以生成CSV、其他带分隔符的文本或XML格式的输出。
+参考： https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html
+
+mysqldump [options] > dump.sql #以utf16编码格式创建输出。
+mysqldump [options] --result-file=dump.sql #以ASCII编码格式创建输出。
+
+导出一个表，多个表，整个库的语句：
+mysqldump [options] db_name [tbl_name ...]
+mysqldump [options] --databases db_name ...
+mysqldump [options] --all-databases
+
+示例导出：
+mysqldump -u root -p db_name > backup-file.sql
+导入：
+mysql -u root -p db_name < backup-file.sql
+mysql -u root -p -e "source /path-to-backup/backup-file.sql" db_name
+
+InnoDB是MySQL8默认的存储引擎。
+支持B树索引、聚集索引、全文索引、空间索引，不支持哈希索引、T树索引。
+支持压缩、缓存、加密数据，支持索引缓存、外键约束、MVCC、事务、更新数据字典的统计信息，锁粒度支持到行级别。
+
+========== ========== 数据类型 ========== ==========
+
+BIT[(M)]: M表示每个值的位数，取值范围为1~64，默认1。
+TINYINT [UNSIGNED]: 1字节整数(int8/uint8)。
+BOOL, BOOLEAN: TINYINT的同义词，非0值代表true，0代表false。
+SMALLINT [UNSIGNED]: 2字节整数(int16/uint16)。
+MEDIUMINT [UNSIGNED]: 3字节整数(int24/uint24)。
+INT [UNSIGNED]: 4字节整数(int32/uint32)。同义词：INTEGER
+BIGINT [UNSIGNED]: 8字节整数(int64/uint64)。
+SERIAL: 'BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE' 的别名
+
+DECIMAL[(M[,D])]: 紧凑的定点数字，M是总位数（精度）默认10最大64，D是小数点后的位数默认0最大30，四则运算都以65位的精度完成。同义词：DEC,NUMERIC,FIXED。
+FLOAT: 单精度浮点数，4字节。
+DOUBLE: 单精度浮点数，8字节。同义词：DOUBLE PRECISION,REAL。
+FLOAT(p): p为精度的浮点数，0≤p≤24时为单精度浮点，25≤p≤53时为双精度浮点，是为了ODBC兼容性而提供的语法。
+
+YEAR: 4位格式的年份，值显示为[1901,2155]或0000，1字节。
+DATE: 一个日期，支持的范围是[1001-01-01,9999-12-31]，3字节。
+TIME[(fsp)]: 一段时间，范围是'-838:59:59.000000'到'838:59:59.000000'，3字节。可选的fsp值范围从0到6，以指定小数秒精度，默认精度为0。
+DATETIME[(fsp)]: 日期和时间的组合，支持的范围为[1000-01 00:00:00.000000, 9999-12-31 23:59:59.499999]，8字节。
+TIMESTAMP[(fsp)]: 一个时间戳，范围为UTC'1970-01-01 00:00:01.000000'到UTC'2038-01-19 03:14:07.499999'，4字节。
+允许使用字符串或数字向YEAR,DATE,TIME,DATETIME,TIMESTAMP列分配值。
+TIMESTAMP和DATETIME列可以自动初始化并更新为当前日期和时间(即当前时间戳)。可指定NULL或NOT NULL属性，DEFAULT值也可以是常量字符串或数字。
+example: (
+    create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_at NOT NULL ON UPDATE CURRENT_TIMESTAMP -- DEFAULT 0,不指定NOT NULL则DEFAULT NULL
+)
+
+CHAR[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]: 一个固定长度的字符串，在存储时总是用空格右填充到指定的长度。M表示以字符为单位的列长度，取值范围为0~255，默认1。
+VARCHAR(M) [CHARACTER SET charset_name] [COLLATE collation_name]: 可变长度的字符串。M表示以字符为单位的最大列长度，取值范围是0~65535。VARCHAR的有效最大长度取决于最大行大小(65535字节在所有列之间共享)和所使用的字符集。MySQL将VARCHAR值存储为1字节(M≤255)或2字节(M>255)长度的前缀加上数据。
+BINARY[(M)]: 类似CHAR但是以二进制字节存储。
+VARBINARY(M): 类似VARCHAR但是以二进制字节存储。
+
+TINYBLOB: 最大长度255字节，1字节长度的前缀存储值中的字节数。
+BLOB[(M)]: 最大长度65535字节，2字节长度的前缀存储值中的字节数。
+MEDIUMBLOB: 最大长度16777215字节，3字节长度的前缀存储值中的字节数。
+LONGBLOB: 最大长度4294967295字节，4字节长度的前缀存储值中的字节数。
+
+TINYTEXT [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度255字符，1字节长度的前缀存储值中的字节数。
+TEXT[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度65535字符，2字节长度的前缀存储值中的字节数。
+MEDIUMTEXT [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度16777215字符，3字节长度的前缀存储值中的字节数。
+LONGTEXT [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度4294967295字符，4字节长度的前缀存储值中的字节数。
+对于字符串列(CHAR、VARCHAR,TEXT)以字符单位解释长度规范，对于二进制字符串列(BINARY,VARBINARY,BLOB)以字节单位解释长度规范。
+
+ENUM('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]: 枚举类型，值只能是'value1','value2',...,'',NULL之一，最多支持65535项。
+SET('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]: 集合类型，值只能在'value1','value2',...,'',NULL中选择，最多支持65535项。
+
+JSON: json对象，所需的空间与LONGBLOB或LONGTEXT大致相同。
+
+========== ========== DDL语句 ========== ==========
+
+CREATE DATABASE [IF NOT EXISTS] db_name [[DEFAULT] CHARACTER SET [=] charset_name COLLATE [=] collation_name]; #建库
+    eg: CREATE DATABASE `db_name` DEFAULT CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER DATABASE db_name [[DEFAULT] CHARACTER SET [=] charset_name COLLATE [=] collation_name]; #修改库
+DROP DATABASE [IF EXISTS] db_name; #删库
+
+CREATE TABLE [IF NOT EXISTS] tbl_name (column_definition...) [table_option];
+table_option: {
+    AUTO_INCREMENT [=] value
+  | [DEFAULT] CHARACTER SET [=] charset_name
+  | [DEFAULT] COLLATE [=] collation_name
+  | COMMENT [=] 'string'
+  | ENGINE [=] engine_name
+}
+column_definition: {
+    col_name data_type
+      [NOT NULL | NULL] [DEFAULT {literal | (expr)} ]
+      [AUTO_INCREMENT] [UNIQUE [KEY]] [[PRIMARY] KEY]
+      [COMMENT 'string']
+      [COLLATE collation_name]
+      [check_constraint_definition]
+  | col_name data_type
+      [COLLATE collation_name]
+      [GENERATED ALWAYS] AS (expr)
+      [NOT NULL | NULL]
+      [UNIQUE [KEY]] [[PRIMARY] KEY]
+      [COMMENT 'string']
+      [check_constraint_definition]
+}
+check_constraint_definition:
+    [CONSTRAINT [symbol]] CHECK (expr) [[NOT] ENFORCED]
+
+ALTER TABLE tbl_name [alter_option [, alter_option] ...];
+alter_option: {
+    table_option
+  | ADD [COLUMN] col_name column_definition [FIRST | AFTER col_name]
+  | ADD [COLUMN] (col_name column_definition,...)
+  | ADD {INDEX | KEY} [index_name] (key_part,...)
+  | ADD [CONSTRAINT [symbol]] PRIMARY KEY (key_part,...)
+  | ADD [CONSTRAINT [symbol]] UNIQUE [INDEX | KEY] [index_name] (key_part,...)
+  | ADD [CONSTRAINT [symbol]] CHECK (expr) [[NOT] ENFORCED]
+  | DROP {CHECK | CONSTRAINT} symbol
+  | ALTER {CHECK | CONSTRAINT} symbol [NOT] ENFORCED
+  | ALTER [COLUMN] col_name { SET DEFAULT {literal | (expr)} | DROP DEFAULT }
+  | CHANGE [COLUMN] old_col_name new_col_name column_definition [FIRST | AFTER col_name]
+  | [DEFAULT] CHARACTER SET [=] charset_name [COLLATE [=] collation_name]
+  | CONVERT TO CHARACTER SET charset_name [COLLATE collation_name]
+  | DROP [COLUMN] col_name
+  | DROP {INDEX | KEY} index_name
+  | DROP PRIMARY KEY
+  | MODIFY [COLUMN] col_name column_definition [FIRST | AFTER col_name]
+  | RENAME COLUMN old_col_name TO new_col_name
+  | RENAME {INDEX | KEY} old_index_name TO new_index_name
+  | RENAME [TO | AS] new_tbl_name
+}
+
+CREATE TABLE [IF NOT EXISTS] tbl_name LIKE old_tbl_name;
+CREATE TABLE new_tbl [AS] select_statement;
+RENAME TABLE tbl_name TO new_tbl_name [, tbl_name2 TO new_tbl_name2] ...;
+TRUNCATE [TABLE] tbl_name;
+DROP TABLE [IF EXISTS] tbl_name [, tbl_name] ...;
+
+CREATE [UNIQUE | FULLTEXT | SPATIAL] INDEX index_name ON tbl_name (key_part,...);
+DROP INDEX index_name ON tbl_name;
+
+CREATE [OR REPLACE] VIEW view_name [(column_list)] AS select_statement;
+DROP VIEW [IF EXISTS] view_name [, view_name] ...;
