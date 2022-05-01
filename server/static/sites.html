@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base target="_blank" />
+    <title>Web Sites</title>
+    <style>
+        main {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 45px;
+        }
+        .links {
+            width: 100px;
+            height: 80px;
+            border: 1px dotted silver;
+            text-align: center;
+        }
+        .links img {
+            height: 36px;
+            margin-top: 10px;
+        }
+        .links a {
+            line-height: 24px;
+            text-decoration: none;
+            color: #666;
+        }
+    </style>
+    <script>
+    const links = [
+        {
+            key: "Golang",
+            url: "https://go.dev/",
+            img: "https://go.dev/images/favicon-gopher.png",
+        },{
+            key: "Microsoft",
+            url: "https://learn.microsoft.com/",
+            img: "https://www.microsoft.com/favicon.ico"
+        },{
+            key: "MDN Web",
+            url: "https://developer.mozilla.org/",
+            img: "https://developer.mozilla.org/favicon-48x48.cbbd161b.png"
+        },{
+            key: "Node.js",
+            url: "https://nodejs.org/",
+            img: "https://nodejs.org/static/images/favicons/favicon.png"
+        },{
+            key: "Typescript",
+            url: "https://www.typescriptlang.org/",
+            img: "https://www.typescriptlang.org/favicon-32x32.png"
+        },{
+            key: "MySQL",
+            url: "https://dev.mysql.com/",
+            img: "https://labs.mysql.com/common/themes/sakila/favicon.ico"
+        },{
+            key: "PostgreSQL",
+            url: "https://www.postgresql.org/",
+            img: "https://www.postgresql.org/favicon.ico"
+        },{
+            key: "MongoDB",
+            url: "https://www.mongodb.com/zh-cn",
+            img: "https://www.mongodb.com/assets/images/global/favicon.ico"
+        },{
+            key: "Redis",
+            url: "https://redis.io/",
+            img: "https://redis.io/wp-content/themes/wpx/assets/images/favicons/favicon.ico"
+        },{
+            key: "RabbitMQ",
+            url: "https://www.rabbitmq.com/",
+            img: "https://www.rabbitmq.com/img/rabbitmq-logo.svg"
+        },{
+            key: "NSQ",
+            url: "https://nsq.io/",
+            img: "https://nsq.io/static/img/nsq_favicon.png"
+        },{
+            key: "Nginx",
+            url: "https://nginx.org/",
+            img: "https://nginx.org/favicon.ico"
+        },{
+            key: "Docker",
+            url: "https://docs.docker.com/",
+            img: "https://docs.docker.com/favicons/docs@2x.ico"
+        },{
+            key: "Kubernetes",
+            url: "https://kubernetes.io/",
+            img: "https://kubernetes.io/images/kubernetes.png"
+        },{
+            key: "GitHub",
+            url: "https://github.com/",
+            img: "https://github.githubassets.com/favicons/favicon.png"
+        },{
+            key: "LeetCode",
+            url: "https://leetcode.cn/",
+            img: "https://leetcode.cn/favicon.ico"
+        },{
+            key: "Mermaid",
+            url: "http://mermaid.js.org/intro/",
+            img: "http://mermaid.js.org/favicon.ico"
+        },{
+            key: "PlantUML",
+            url: "https://plantuml.com/zh/",
+            img: "https://plantuml.com/favicon.ico"
+        },{
+            key: "Emoji",
+            url: "https://www.emojiall.com/zh-hans",
+            img: "https://www.emojiall.com/favicon.ico"
+        }
+    ];
+    </script>
+</head>
+<body>
+<main>
+    <script>
+        links.forEach(function(item){
+            document.write(`
+    <div class="links">
+        <a href="${item.url}">
+            <img src="${item.img}" alt="" />
+            <br /> ${item.key}
+        </a>
+    </div>`);
+        });
+    </script>
+</main>
+</body>
+</html>

@@ -1,0 +1,121 @@
+官网下载最新LTS版本的node.js：
+	https://nodejs.org/en/
+
+查看安装版本：
+	node -v
+	npm -v
+
+命令行运行文件：
+	node index.js
+
+如需多版本切换，使用nvm进行管理：https://github.com/nvm-sh/nvm
+windows下使用nvm-windows：https://github.com/coreybutler/nvm-windows
+nvm ls-remote #查看所有远程版本
+nvm ls #查看已安装可用版本
+nvm install NODE #安装指定版本，NODE代表版本号，eg: 14.18.3、16.19、18、latest
+nvm uninstall NODE #删除已安装的指定版本
+nvm use NODE #切换使用指定版本
+nvm use system #使用系统安装的版本
+nvm current #查看当前使用的版本
+nvm alias default NODE #设置默认版本
+
+========== ========== npm常用命令 ========== ==========
+
+初始化package.json
+	npm init
+	可选参数--yes(-y)自动使用默认值填充所有选项
+
+配置项：
+	npm config set <key>=<value> [<key>=<value> ...]
+	npm config get [<key> [<key> ...]]
+	npm config delete <key> [<key> ...]
+	npm config list [--json]
+
+设置镜像源：
+	npm config set registry https://registry.npmmirror.com #阿里源
+查看镜像源：
+	npm config get registry #原先默认https://registry.npmjs.org
+临时使用镜像源：
+	npm install --registry=https://registry.npmmirror.com
+
+安装依赖项：
+	npm install [<package-spec> ...]
+	install别名：i, add
+	不带包名和参数会根据package.json的配置所有依赖到本地node_modules目录。
+	可选参数：
+		--global(-g): 全局安装
+		--save-prod(-P): 默认安装到dependencies，除非指定-D或-O
+		--save-dev(-D): 安装到devDependencies
+		--save-optional(-O): 安装到optionalDependencies.
+		--no-save: 阻止保存到dependencies.
+
+卸载软件包：
+	npm uninstall [<@scope>/]<pkg>...
+	uninstall别名：rm, r, un
+	不带包名表示卸载所有package.json的依赖。
+	可选参数：-S, -D, -g
+
+更新软件包：
+	npm update [<pkg>...]
+	update别名：up
+	不带包名表示package.json里面的所有依赖更新。
+	可选参数：-g, -D
+
+升级npm：
+	npm i npm -g
+
+运行在package.json内的scripts定义的脚本命令
+	npm run-script <command> [-- <args>]
+	run-script别名：run
+
+========== ========== ========== ========== ==========
+
+安装typescript：
+npm i -g typescript
+查看安装版本：
+tsc -v
+初始化TypeScript项目并创建一个tsconfig.json文件：
+tsc --init
+配置路径别名，在tsconfig.json顶层配置
+	"baseUrl": "./",
+	"paths": {
+		"@/*": ["src/*"]
+	}
+
+安装ts-node：
+npm i -g ts-node
+
+运行ts文件：
+ts-node main.ts
+
+解决ts-node不支持typescript路径别名：
+npm i -D tsconfig-paths
+tsconfig顶层配置添加：
+	"ts-node": {
+		"require": ["tsconfig-paths/register"]
+	}
+
+安装静态检查和代码美化
+npm init @eslint/config
+
+安装代码美化
+npm i -D prettier eslint-config-prettier
+在.eslintrc的"extends"数组末尾添加一项："prettier"
+
+自定义代码格式化配置，可创建.prettierrc.json文件并写入自定义规则，例如单行限制字符改成100(默认80)
+{
+  "printWidth": 100
+}
+
+默认使用项目根目录的.eslintignore为ESLint忽略指定文件，.prettierignore为Prettier忽略指定文件。
+
+在package.json文件的"script"添加两行：
+	"lint": "eslint . --fix --ignore-path .gitignore",
+	"format": "prettier --write ."
+
+vscode配置保存时自动格式化
+	1. 安装插件：Prettier - Code formatter，可在.vscode/extensions.json顶层的"recommendations"数组添加一项
+		"esbenp.prettier-vscode"
+	2. 在.vscode/settings.json顶层写入两项
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSave": true
