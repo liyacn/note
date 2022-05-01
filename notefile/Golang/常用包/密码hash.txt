@@ -1,0 +1,81 @@
+用于安全存储密码的hash算法有：pbkdf2、bcrypt、scrypt、argon2等。
+推荐使用： pbkdf2 < bcrypt < scrypt < argon2(最好是argon2id)
+"golang.org/x/crypto"官方扩展包下提供了对应算法。
+
+========== ========== ========== ========== ==========
+
+"golang.org/x/crypto/bcrypt"内置常量：
+	MinCost     int = 4 
+	MaxCost     int = 31
+	DefaultCost int = 10
+
+func GenerateFromPassword(password []byte, cost int) ([]byte, error)
+从明文密码生成60字节长度hash值，password长度不能超过72字节，cost范围[4,31]。
+cost值越大运算速度越慢，cost每增加1运算耗时大约翻一倍，一般取DefaultCost。
+bcrypt是加盐的自适应hash算法，每次运行计算的密码值都不相同。
+
+func Cost(hashedPassword []byte) (int, error)
+返回用于创建给定哈希密码的cost值。
+
+func CompareHashAndPassword(hashedPassword, password []byte) error
+将哈希密码与其可能的明文密码进行比较，成功时返回nil，失败时返回error。
+
+========== ========== ========== ========== ==========
+
+"golang.org/x/crypto/pbkdf2"
+
+func Key(password, salt []byte, iter, keyLen int, h func() hash.Hash) []byte
+入参：明文、随机盐值（建议最少8字节）、迭代次数（建议2^12）、返回密钥长度、hash函数。
+
+========== ========== ========== ========== ==========
+
+"golang.org/x/crypto/scrypt"
+
+func Key(password, salt []byte, N, r, p, keyLen int) ([]byte, error)
+password明文，salt随机盐值，N是CPU成本参数必须是大于1的2的幂，r*p必须小于2^30，keyLen为返回密钥长度。
+推荐参数为N=2^15，r=8，p=1。参数N、r和p应随着内存延迟和CPU并行度的增加而增加。
+可将N设置为100ms可导出密钥的2的最大幂，salt建议至少8字节。
+
+========== ========== ========== ========== ==========
+
+"golang.org/x/crypto/argon2"
+
+func Key(password, salt []byte, time, memory uint32, threads uint8, keyLen uint32) []byte
+func IDKey(password, salt []byte, time, memory uint32, threads uint8, keyLen uint32) []byte
+time参数指定通过内存的次数必须大于0，memory参数指定以KiB为单位的内存大小，threads为并行参数必须大于0。
+salt随机盐值，keyLen为返回密钥长度。Key建议参数为time=3,memory=2^15；IDKey建议参数为time=1,memory=2^16。
+
+========== ========== ========== ========== ==========
+
+package main
+
+import (
+	"crypto/rand"
+	"crypto/sha1"
+	"fmt"
+	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/scrypt"
+)
+
+func main() {
+	pwd := []byte("123456")
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		panic(err)
+	}
+
+	bts := pbkdf2.Key(pwd, salt, 1<<12, 32, sha1.New)
+	ss, _ := scrypt.Key(pwd, salt, 1<<15, 8, 1, 32)
+	a1 := argon2.Key(pwd, salt, 3, 1<<15, 4, 32)
+	a2 := argon2.IDKey(pwd, salt, 1, 1<<16, 4, 32)
+	fmt.Println(bts, ss, a1, a2) // 返回的字节数组和salt应该分别编码后保存，也可以合并保存到一个字段。
+
+	hashed, _ := bcrypt.GenerateFromPassword(pwd, bcrypt.DefaultCost)
+	fmt.Println(string(hashed), len(hashed)) // 密码长度60，已合并salt值无需另外保存。
+	err := bcrypt.CompareHashAndPassword(hashed, pwd)
+	fmt.Println(err == nil) // true
+	err = bcrypt.CompareHashAndPassword(hashed, []byte("654321"))
+	fmt.Println(err == nil) // false
+}

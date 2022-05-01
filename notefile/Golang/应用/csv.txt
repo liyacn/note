@@ -1,0 +1,90 @@
+"encoding/csv"读写逗号分隔值（csv）的文件。
+
+func NewReader(r io.Reader) *Reader
+返回一个从r读取的*Reader。
+
+func (r *Reader) Read() (record []string, err error)
+从r读取一条记录，返回值record是字符串的切片，每个字符串代表一个字段。
+
+func (r *Reader) ReadAll() (records [][]string, err error)
+从r中读取所有剩余的记录，每个记录都是字段的切片，成功的调用返回值err为nil而不是EOF。
+因为ReadAll方法定义为读取直到文件结尾，因此它不会将文件结尾视为应该报告的错误。
+
+func NewWriter(w io.Writer) *Writer
+返回一个写入w的*Writer。
+
+func (w *Writer) Write(record []string) (err error)
+向w中写入一条记录，会自行添加必需的引号。记录是字符串切片，每个字符串代表一个字段。
+
+func (w *Writer) Flush()
+将缓存中的数据写入底层的io.Writer。要检查Flush时是否发生错误的话，应调用Error方法。
+
+func (w *Writer) Error() error
+返回在之前的Write方法和Flush方法执行时出现的任何错误。
+
+func (w *Writer) WriteAll(records [][]string) (err error)
+使用Write方法向w写入多条记录，并在最后调用Flush方法清空缓存。
+
+========== ========== ========== ========== ==========
+
+package table
+
+import (
+	"bytes"
+	"encoding/csv"
+	"fmt"
+	"io"
+	"os"
+)
+
+var th = []string{"ID", "name", "age"}
+
+var records = [][]string{
+	{"1", "喵喵", "8"},
+	{"2", "咪咪", "6"},
+	{"3", "Kitty", "7"},
+}
+
+func Write() {
+	buf := bytes.NewBuffer(nil)
+	buf.WriteString("\xEF\xBB\xBF") //防止中文乱码需写入utf8-BOM头
+	w := csv.NewWriter(buf)
+	w.Write(th)
+
+	for _, row := range records { //按行写入
+		w.Write(row)
+	}
+	w.Flush() //按行写入最后必须调用Flush方法
+
+	//w.WriteAll(records) //一个大数组全部循环写入并Flush
+
+	if err := w.Error(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//if err := os.WriteFile("demo.csv", buf.Bytes(), 0666); err != nil {
+	//	fmt.Println(err) //保存到本地
+	//}
+
+	// buf直接从第三方sdk上传
+	fmt.Println(buf.Len())
+}
+
+func Read() {
+	file, _ := os.Open("demo.csv")
+	defer file.Close()
+	r := csv.NewReader(file)
+
+	row, err := r.Read() //按行读取
+	for err == nil {
+		fmt.Println(row)
+		row, err = r.Read()
+	}
+	if err != nil && err != io.EOF {
+		fmt.Println(err)
+	}
+
+	//rows, err := r.ReadAll() //全部读取到一个大数组
+	//fmt.Println(rows, err)
+}

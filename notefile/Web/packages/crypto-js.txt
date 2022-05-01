@@ -1,0 +1,116 @@
+文档参考：
+https://www.npmjs.com/package/crypto-js
+https://github.com/brix/crypto-js
+
+安装下载：
+npm i crypto-js
+npm i -D @types/crypto-js
+
+hash算法：MD5,SHA1,SHA256,SHA224,SHA512,SHA384,SHA3,RIPEMD160，以及对应的8种Hmac算法。
+密码hash算法： EvpKDF,PBKDF2。
+字节编码方式有：Hex,Utf8,Base64,Base64url等。
+对称加密算法：AES,DES,TripleDES,RC4,RC4Drop,Rabbit,RabbitLegacy等。
+
+避坑：加密算法的密钥和向量必须通过Encoder.parse获得，加密结果才能和后端一致。
+     如直接使用字符串，每次加密结果会发生变化，且与后端不一致，虽然自身也能成功解密。
+
+========== ========== 命名空间全部引入 ========== ==========
+
+import CryptoJS from "crypto-js";
+
+{
+  const s1 = CryptoJS.MD5("abc123").toString(),
+    s2 = CryptoJS.HmacMD5("abc123", "key").toString();
+  console.log(s1, s2);
+}
+
+{
+  const key = CryptoJS.enc.Utf8.parse("0123456789abcdef");
+  const cipher = CryptoJS.RC4.encrypt("13800138000", key).toString();
+  try {
+    const plain = CryptoJS.RC4.decrypt(cipher, key).toString(CryptoJS.enc.Utf8);
+    console.log(cipher, plain);
+  } catch {
+    console.error("rc4 decrypt fail.");
+  }
+}
+
+{
+  const key = CryptoJS.enc.Base64.parse("YWc+Sa/u1XUwpX9UAF32ww=="),
+    iv = CryptoJS.enc.Base64url.parse("MK_aTNUQld-1A0XgIa9tUw");
+  const options = {
+    iv: iv,
+    padding: CryptoJS.pad.Pkcs7, // is default
+    mode: CryptoJS.mode.CBC, // is default
+  };
+  const cipher = CryptoJS.AES.encrypt("13800138000", key, options).toString();
+  try {
+    const plain = CryptoJS.AES.decrypt(cipher, key, options).toString(CryptoJS.enc.Utf8);
+    console.log(cipher, plain);
+  } catch {
+    console.error("aes decrypt fail.");
+  }
+}
+
+{
+  const encode = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse("a1中"));
+  try {
+    const decode = CryptoJS.enc.Base64.parse(encode).toString(CryptoJS.enc.Utf8);
+    console.log(encode, decode);
+  } catch {
+    console.log("base64 decode fail.");
+  }
+}
+
+========== ========== 分别引入 ========== ==========
+
+import { AES, HmacMD5, MD5, RC4 } from "crypto-js";
+import Base64 from "crypto-js/enc-base64";
+import Base64url from "crypto-js/enc-base64url";
+import Utf8 from "crypto-js/enc-utf8";
+import CTR from "crypto-js/mode-ctr";
+import NoPadding from "crypto-js/pad-nopadding";
+
+{
+  const s1 = MD5("abc123").toString(),
+    s2 = HmacMD5("abc123", "key").toString();
+  console.log(s1, s2);
+}
+
+{
+  const key = Utf8.parse("0123456789abcdef");
+  const cipher = RC4.encrypt("13800138000", key).toString();
+  try {
+    const plain = RC4.decrypt(cipher, key).toString(Utf8);
+    console.log(cipher, plain);
+  } catch {
+    console.error("rc4 decrypt fail.");
+  }
+}
+
+{
+  const key = Base64.parse("YWc+Sa/u1XUwpX9UAF32ww=="),
+    iv = Base64url.parse("MK_aTNUQld-1A0XgIa9tUw");
+  const options = {
+    iv: iv,
+    padding: NoPadding,
+    mode: CTR,
+  };
+  const cipher = AES.encrypt("13800138000", key, options).toString();
+  try {
+    const plain = AES.decrypt(cipher, key, options).toString(Utf8);
+    console.log(cipher, plain);
+  } catch {
+    console.error("aes decrypt fail.");
+  }
+}
+
+{
+  const encode = Base64.stringify(Utf8.parse("a1中"));
+  try {
+    const decode = Base64.parse(encode).toString(Utf8);
+    console.log(encode, decode);
+  } catch {
+    console.log("base64 decode fail.");
+  }
+}

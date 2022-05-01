@@ -1,0 +1,81 @@
+官网：https://git-scm.com/
+windows下载安装包安装，mac/ubuntu通过brew/apt安装
+git version #查看版本
+
+#安装完git最先要做的是配置用户名和邮箱，因为每一个Git的提交都会使用这些信息。
+git config --global user.name "名字"
+git config --global user.email "E-mail地址"
+#想针对特定项目使用不同的用户名称与邮件地址时，可以在那个项目目录下运行没有--global选项的命令来配置。
+
+git config --global url.git@git.domain.cn:.insteadof https://git.domain.cn/ #私有仓库url替换
+git config --list(or:-l) #列出所有git当时能找到的配置
+
+用户主目录下的.gitconfig文件可以看到全局配置，项目目录下的.git/config文件可以看到特定项目的配置。
+如需增加git命令别名，可以在配置文件写入alias模块，例如：
+[alias]
+	rs=reset --hard
+	pf=push -f
+	cm=commit -m
+	ca=commit --amend
+	ms=merge --squash
+	cp=cherry-pick
+	co=checkout
+
+#首先要给自己创建SSHKey然后再将公钥加入到远程的Git服务器中。
+ssh-keygen #完成后用户的主目录生成.ssh的隐藏文件夹，两个文件“id_rsa”和“id_rsa.pub”分别是私钥和公钥。
+
+git init #初始化一个本地仓库
+git clone 远程库地址 #获得一份已经存在了的Git仓库的拷贝
+
+git remote add 远程仓库别名 远程仓库地址 #添加一个远程仓库
+git remote #查看已经配置的远程仓库服务器，origin是Git给克隆的仓库服务器的默认名字
+git remote --verbose(or:-v) #会显示需要读写远程仓库使用的Git保存的简写与其对应的URL
+git remote rename 旧名 新名 #重命名关联库
+git remote set-url 远程仓库别名 新的仓库地址 #修改关联仓库的URL
+git remote remove 远程仓库别名 #移除远程仓库
+
+git branch #查看有哪些分支，当前在哪个分支上
+#如果需要查看每一个分支的最后一次提交，可以加-v。--merged与--no-merged选项可以过滤这个列表中已经合并或尚未合并到当前分支的分支。
+git branch 分支名 #新建一个分支
+git branch -D 分支名 #删除一个分支
+git branch --move(or:-m) 新分支名 #重命名当前分支
+git checkout 分支名 #切换到一个已存在的分支
+git checkout -b 分支名 #新建一个分支并同时切换到那个分支上
+git merge 分支名 #合并分支到当前分支上，--squash合并所有提交到一个修改
+git merge 动作 #--abort取消merge或pull，--continue继续merge或pull
+git cherry-pick commitSHA #把已提交的记录合并到当前分支，-n表示只提取修改不提取commit
+git cherry-pick 动作 #--abort取消，--continue继续
+
+git add README.md #将README.md添加到暂存区
+git add . #将当前所有文件添加到暂存区
+#add命令使用文件或目录的路径作为参数；如果参数是目录的路径，该命令将递归地跟踪该目录下的所有文件。
+git status #查看哪些文件处于什么状态可以加--short(or:-s)参数获得简短信息
+git commit -m "注释说明" #提交到本地仓库
+git commit --amend -m "新注释" #将暂存区中的文件提交，注释内容编辑保存后会覆盖原来的提交信息
+git commit -a -m "注释说明" #跳过暂存区直接提交到本地仓库
+git reset --hard 版本 #重置到某版本，HEAD^前一个版本，HEAD^^前两个版本，HEAD~n前n个版本，指定commitSHA，指定分支名
+git rm -r --cached 文件或目录名 #清除git缓存，需忽略已加入追踪的文件时使用
+
+git fetch 仓库名 [指定分支][:本地分支别名] #将远程仓库所有分支的最新版本全部取回到本地
+git pull 仓库名 分支名 #将远程库的文件拉到本地库中，如果是origin和当前分支可以省略
+git push --set-upstream(or:-u) 仓库名 分支名 #将新分支推送到远程仓库
+git push #将当前分支推送到远程仓库关联的分支，--force(or:-f)强制覆盖远端分支
+
+git tag [--list](or:-l) #查看标签
+git tag 标签名 [commitSHA] #创建一个标签，可指定到特定commit
+git tag -a 标签名 -m "注释" #可以在创建标签时附加一些信息
+git tag -d 标签名 #删除标签
+git push 仓库名 标签名 #推送到远程仓库
+git push 仓库名 --tags # 一次性推送全部尚未推送到远程的本地tags
+git push 仓库名 :refs/tags/标签名 #删除远程仓库指定tag
+
+git log [分支名] #查看提交历史
+git reflog #查看所有所有引起HEAD指针变动的操作历史
+git diff 分支名/commitSHA# 比较与当前分支的差异
+
+# 手动指定提交时间
+GIT_COMMITTER_DATE="2006-01-02T15:04:05" git commit --date="2006-01-02T15:04:05"
+后面可接--amend和-m等参数，还可以修改提交人信息： --author "xxx <xxx@email.host>"
+windows下需要分两个命令执行
+$env:GIT_COMMITTER_DATE="2006-01-02T15:04:05" 
+git commit -m "message" --date="2006-01-02T15:04:05"

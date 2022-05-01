@@ -1,0 +1,80 @@
+========== ========== 安装 ========== ==========
+
+windows/mac可从以下网站下载安装包双击安装：
+https://golang.google.cn/dl/
+https://go.dev/dl/
+
+go version #查看安装版本
+go #查看可用命令
+命令参考： https://pkg.go.dev/cmd/go
+
+========== ========== 命令参数 ========== ==========
+
+go get [-t] [-u] [-v] [build flags] [packages] #添加并安装依赖到当前模块
+
+go install [build flags] [packages] #编译和安装包和依赖项
+
+go clean [clean flags] [build flags] [packages] #删除对象文件和缓存文件
+
+go build [-o output] [build flags] [packages] #编译包和依赖项
+	跨平台编译需指定环境变量GOOS和GOARCH。
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build #编译成Mac平台的64位可执行程序
+	GOOS：目标可执行程序运行操作系统，支持 darwin，freebsd，linux，windows
+	GOARCH：目标可执行程序操作系统构架，包括 386，amd64，arm
+
+go run [build flags] [-exec xprog] package [arguments...] #编译并运行程序
+
+go test [build/test flags] [packages] [build/test flags & test binary flags] #运行测试程序
+
+go mod init <module-path> #在当前目录初始化模块
+go mod download #下载modules到本地cache
+go mod tidy #添加缺失的模块，删除不使用的模块
+go mod vendor [-e] [-v] [-o outdir] #生成vendor目录
+go mod verify #验证依赖项
+go clean -modcache #清理本地cache
+
+========== ========== 配置 ========== ==========
+
+go env #查看环境配置
+
+go env -w GOPATH=/Users/admin/go #修改默认的GOPATH设置
+go env -w GO111MODULE=on #开启gomodule
+go env -w GOPROXY=https://goproxy.io,direct #使用代理
+go env -w GONOPROXY=*.example.com #不使用代理
+go env -w GOPRIVATE=*.example.com #私有仓库不使用代理
+go env -w GOSUMDB=sum.golang.google.cn #替换默认的sum.golang.org，或设为off关闭验证
+
+GOPROXY默认值是"https://proxy.golang.org,direct"，支持多个地址。
+以","分割时仅当前一个proxy返回错误码404或410时才会向下一个proxy发送请求。
+以'|'分割时，无论发生什么错误，甚至请求超时(非HTTP错误)，都会向下一个proxy请求。
+
+常用proxy：
+https://proxy.golang.org 官方提供
+https://goproxy.cn 七牛云
+https://mirrors.aliyun.com/goproxy 阿里云
+https://mirrors.cloud.tencent.com/go 腾讯云
+https://goproxy.io 社区提供
+https://proxy.golang.com.cn 社区提供
+
+========== ========== 常用包安装 ========== ==========
+
+命令行执行
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+检查安装是否成功
+golangci-lint version
+
+列表展示支持的规则以及开启禁用
+golangci-lint help linters
+
+项目文件夹中执行检查
+golangci-lint run
+
+参考文档：https://golangci-lint.run/
+
+========== ========== IDE配置 ========== ==========
+
+Goland > preferences > tools > File Watchers 添加 go fmt 代码自动格式化
+
+可以在Goland中切换不同的Go版本：
+Goland > preferences > Go > GOROOT 点击“+”号下载远端版本到本地

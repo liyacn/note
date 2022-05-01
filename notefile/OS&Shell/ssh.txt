@@ -1,0 +1,48 @@
+SSH（Secure-Shell的缩写）是一种网络协议，用于加密两台计算机之间的通信，并且支持各种身份验证机制。
+
+OpenSSH的客户端是二进制程序ssh。
+它在Linux/Unix系统的位置是/usr/local/bin/ssh，Windows系统的位置是\Program Files\OpenSSH\bin\ssh.exe。
+
+ssh登录服务器的命令如下。
+ssh hostname
+
+如果要指定用户名，可以采用下面的语法。
+ssh user@hostname
+
+ssh默认连接服务器的22端口，-p参数可以指定其他端口。
+ssh -p 8821 foo.com
+
+SSH默认采用密码登录。密钥登录是比密码登录更好的解决方案。
+
+密钥登录时，首先需要生成公钥和私钥。OpenSSH提供了一个工具程序ssh-keygen命令，用来生成密钥。
+-t参数用于指定生成密钥的加密算法，一般为dsa或rsa。如果省略该参数，默认使用RSA算法。
+
+用户的密钥一般都放在主目录的.ssh目录里面。
+如果选择rsa算法，生成的密钥文件默认就会是~/.ssh/id_rsa（私钥）和~/.ssh/id_rsa.pub（公钥）。
+如果选择dsa算法，生成的密钥文件默认就会是~/.ssh/id_dsa（私钥）和~/.ssh/id_dsa.pub（公钥）。
+
+OpenSSH规定，用户公钥保存在服务器的~/.ssh/authorized_keys文件。
+要以哪个用户的身份登录到服务器，密钥就必须保存在该用户主目录的~/.ssh/authorized_keys文件。
+只要把公钥添加到这个文件之中，就相当于公钥上传到服务器了。每个公钥占据一行。如果该文件不存在，可以手动创建。
+
+OpenSSH自带一个ssh-copy-id命令，可以自动将公钥拷贝到远程服务器的~/.ssh/authorized_keys文件。
+ssh-copy-id会采用密码登录，系统会提示输入远程服务器的密码。
+如果~/.ssh/authorized_keys文件不存在，ssh-copy-id命令会自动创建该文件。
+ssh-copy-id -i key_file user@host
+-i参数用来指定公钥文件，user是所要登录的账户名，host是服务器地址。
+公钥文件可以不指定路径和.pub后缀名，ssh-copy-id会自动在~/.ssh目录里面寻找。
+
+为了安全性，启用密钥登录之后，最好关闭服务器的密码登录。
+对于OpenSSH，具体方法就是打开服务器sshd的配置文件/etc/ssh/sshd_config，将PasswordAuthentication这一项设为no。
+
+scp是SSH提供的一个客户端程序，用来在两台主机之间加密传送文件（即复制文件）。
+scp是secure-copy的缩写，相当于cp命令+SSH。
+它的底层是SSH协议，默认端口是22，相当于先使用ssh命令登录远程主机，然后再执行拷贝操作。
+
+scp的语法类似cp的语法。
+scp source destination
+source是文件当前的位置，destination是文件所要复制到的位置。它们都可以包含用户名和主机名。
+scp user@host:foo.txt bar.txt
+
+scp支持一次复制多个文件。
+scp source1 source2 destination

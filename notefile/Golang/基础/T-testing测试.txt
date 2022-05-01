@@ -1,0 +1,171 @@
+Golang中可以使用标准库"testing"包编写单元测试和基准测试，使用`go test`命令执行单元测试和基准测试的代码。
+
+测试文件名以_test.go结尾，文件名开头一般是被测试函数所在的文件名。
+test工具可以遍历以_test.go结尾的文件，执行测试函数，而build和run命令会忽略以_test.go结尾的文件。
+
+在编写单元测试代码时，一般会得到一个实际输出结果，和一个预期的输出结果做对比。
+针对这两个变量，社区的变量名规范是got/want或expected/actual。
+
+单元测试的函数名以Test开头，参数必须是*testing.T类型。
+    func TestXxx(t *testing.T) {}
+
+基准测试的函数名以Benchmark开头，参数必须是*testing.B类型，通常在函数体中for循环的条件，以b.N作为循环次数。
+基准函数会运行目标代码b.N次，在执行期间，会调整b.N直到基准测试函数持续足够长的时间。
+    func BenchmarkXxx(b *testing.B) {
+        // some initialization
+    	for i := 0; i < b.N; i++ {
+    		// ......
+    	}
+    }
+
+example声明的命名约定：包，函数F，类型T，类型T上的方法M依次是：
+    func Example() { ... }
+    func ExampleF() { ... }
+    func ExampleT() { ... }
+    func ExampleT_M() { ... }
+示例函数可以包括以"Output："开头的行注释，并在运行测试时与函数的标准输出进行比较，比较时会忽略前导和尾随空格。
+    func ExampleHello() {
+            fmt.Println("hello")
+            // Output: hello
+    }
+    func ExampleSalutations() {
+            fmt.Println("hello, and")
+            fmt.Println("goodbye")
+            // Output:
+            // hello, and
+            // goodbye
+    }
+"Unordered output:"形式的注释，和"Output:" 类似，但是能够以任意顺序匹配行：
+    func ExamplePerm() {
+        for _, value := range Perm(4) {
+            fmt.Println(value)
+        }
+        // Unordered output: 4
+        // 2
+        // 1
+        // 3
+        // 0
+    }
+没有输出注释的示例函数被编译但不执行。
+
+模糊测试的函数名以Fuzz开头，参数必须是*testing.F，Fuzz方法接受一个函数，第一个参数为*testing.T，第二个参数类型为Add方法参数的类型。
+    func FuzzHex(f *testing.F) {
+        for _, seed := range [][]byte{{}, {0}, {9}, {0xa}, {0xf}, {1, 2, 3, 4}} {
+            f.Add(seed)
+        }
+        f.Fuzz(func(t *testing.T, in []byte) {
+            enc := hex.EncodeToString(in)
+            out, err := hex.DecodeString(enc)
+            if err != nil {
+                t.Fatalf("%v: decode: %v", in, err)
+            }
+            if !bytes.Equal(in, out) {
+                t.Fatalf("%v: not equal after round trip: %v", in, out)
+            }
+        })
+    }
+
+如果有需要，可以调用*T和*B的Skip方法，跳过该测试或基准测试：
+    if testing.Short() {
+        t.Skip("skipping test in short mode.")
+    }
+
+T和B的Run方法允许定义子单元测试和子基准测试，而不必为每个子测试和子基准定义单独的函数。
+子测试也可用于控制并行性。所有的子测试完成后，父测试才会完成。
+    t.Run("A=1", func(t *testing.T) {
+        t.Parallel()
+        // ......
+    })
+    t.Run("B=2", func(t *testing.T) {
+        t.Parallel()
+        // ......
+    })
+
+如果基准测试需要在并行设置中测试性能，则可以使用RunParallel辅助函数; 这样的基准测试一般与-cpu标志一起使用。
+    b.RunParallel(func(pb *testing.PB) {
+        for pb.Next() {
+            // ......
+        }
+    })
+
+如果测试文件包含函数: func TestMain(m *testing.M)
+那么生成的测试将调用TestMain(m)，而不是直接运行测试。
+TestMain运行在主goroutine中, 可以在调用m.Run前后做任何设置和拆卸。
+应该使用m.Run的返回值作为参数调用os.Exit。
+    func TestMain(m *testing.M) {
+        //如果TestMain使用了flags，这里应该加上flag.Parse()
+        os.Exit(m.Run())
+    }
+
+命令参数 go test [build/test flags] [packages] [build/test flags & test binary flags]
+go test #运行当前目录下的单元测试
+go test project/ab #运行project项目(mod)下ab包的单元测试
+go test ./... #运行当前目录及所有子目录下的测试用例
+
+-cover 开启测试覆盖率
+-v 参数可以打印详细的日志。默认只打印简单的测试结果。
+-json 参数将结果输出转换成json格式，以方便自动化测试解析使用。每条json的key有：
+Time(string),Action(string),Package(string),Test(string)，还可能有Elapsed(float),Output(string)
+
+-run regexp 跟据正则表达式执行单元测试和示例测试。
+-bench regexp 默认不执行性能测试，使用-bench参数才可以运行，而且只运行性能测试函数。
+如果要执行所有的性能测试，使用参数"-bench ."或"-bench=."
+
+-run和-bench命令行标志的参数是与测试名称相匹配的非固定的正则表达式。
+go test -run Foo      #匹配"Foo"的顶层测试，例如"TestFooBar"。
+go test -run Foo/A=   #匹配顶层测试"Foo"，运行其匹配"A="的子测试。
+go test -run /A=1     #运行所有匹配"A=1"的子测试。
+go test -fuzz FuzzFoo #运行模糊测试FuzzFoo
+
+-cpu 参数提供一个CPU个数的列表，提供此列表后，那么测试将按照这个列表指定的CPU数设置GOMAXPROCS并分别测试。
+比如"-cpu 1,2"，那么每个测试将执行两次，一次是用1个CPU执行，一次是用2个CPU执行。
+
+-benchtime <t>s 指定每个性能测试的执行时间，如果不指定，则使用默认时间1s。
+-count n 指定每个测试执行的次数，默认执行一次。
+-parallel n 指定测试的最大并发数。
+-benchmem 打印每个操作分配的字节数、每个操作分配的对象数。
+
+benchmark结果示例解析：
+BenchmarkFoo-8		5051356		240.8 ns/op		144 B/op		4 allocs/op
+函数名-线程数GOMAXPROCS
+执行次数b.N
+ns/op：每op耗时纳秒数
+B/op：每op申请内存字节数
+allocs/op：每op申请内存次数
+
+========== ========== 类型T和B和F常用方法 ========== ==========
+
+Log(args ...any) Logf(format string, args ...any)
+使用与Printf相同的格式化语法对它的参数进行格式化，然后将格式化后的文本记录到错误日志里面。
+Fail() 将当前测试标识为失败，但是仍继续执行该测试。
+FailNow() 将当前测试标识为失败并停止执行该测试，在此之后，测试过程将在下一个测试或者下一个基准测试中继续。
+Error(args ...any) 相当于在调用Log之后调用Fail。
+Errorf(format string, args ...any) 相当于在调用Logf之后调用Fail。
+Fatal(args ...any) 相当于在调用Log之后调用FailNow。
+Fatalf(format string, args ...any) 相当于在调用Logf之后调用FailNow。
+SkipNow() 将当前测试标识为“被跳过”并停止执行该测试。
+如果一个测试在失败（Error、Errorf和Fail）之后被跳过了，那么它还是会被判断为是“失败的”。
+Skip(args ...any) 相当于在调用Log之后调用SkipNow。
+Skipf(format string, args ...any) 相当于在调用Logf之后调用SkipNow。
+
+func (t *T) Run(name string, f func(t *T)) bool
+执行名字为name的子测试f ，并报告f在执行过程中是否出现了任何失败。Run将一直阻塞直到f的所有并行测试执行完毕。
+func (t *T) Parallel()
+表示当前测试只会与其他带有Parallel方法的测试并行进行测试。
+
+func (b *B) Run(name string, f func(b *B)) bool
+执行名字为name的子基准测试f ，并报告f在执行过程中是否出现了任何失败。
+func (b *B) RunParallel(body func(*PB))
+以并行的方式执行给定的基准测试。会创建出多个goroutine，并将b.N分配给这些goroutine执行，goroutine数量的默认值为GOMAXPROCS 。
+用户如果想要增加非CPU受限（non-CPU-bound）基准测试的并行性， 那么可以在RunParallel之前调用SetParallelism。
+func (b *B) SetParallelism(p int)
+将RunParallel使用的goroutine数量设置为p*GOMAXPROCS，如果p小于1调用将不产生任何效果。
+func (b *B) ReportAllocs()
+打开当前基准测试的内存统计功能，与使用-benchmem设置类似，但只影响那些调用了该函数的基准测试。
+
+func (b *B) StopTimer()
+停止对测试进行计时。当需要执行一些复杂的初始化操作，并且不想对这些操作进行测量时，就可以使用这个方法来暂时地停止计时。
+func (b *B) StartTimer()
+开始对测试进行计时。这个函数在基准测试开始时会自动被调用，它也可以在调用StopTimer之后恢复进行计时。
+func (b *B) ResetTimer()
+对已经过去的基准测试时间以及内存分配计数器进行清零。如果在运行前基准测试需要一些耗时的配置，则可以配置之后调用此函数。
