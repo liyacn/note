@@ -1,0 +1,18 @@
+html{
+	scrollbar-width: thin;
+}
+
+.pln{color:#383a42}.str{color:#50a14f}.kwd{color:#a626a4}.com{color:#a0a1a7}.typ{color:#4078f2}.lit{color:#986801}.clo,.opn,.pun{color:#383a42}.tag{color:#e45649}.atn{color:#986801}.atv{color:#50a14f}.dec,.var{color:#e45649}.fun{color:#4078f2}@media print,projection{.kwd,.tag,.typ{font-weight:700}.str{color:#50a14f}.kwd{color:#a626a4}.com{color:#a0a1a7}.typ{color:#4078f2}.lit{color:#986801}.clo,.opn,.pun{color:#383a42}.tag{color:#e45649}.atn{color:#986801}.atv{color:#50a14f}}
+
+pre.prettyprint {
+	font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Lucida Console", "DejaVu Sans Mono", "Liberation Mono", "Ubuntu Mono", "Courier New", "Source Han Mono SC", "PingFang SC Mono", "Microsoft YaHei Mono", "WenQuanYi Micro Hei Mono", "SimSun Mono", monospace;
+	font-size: 14px;
+	padding: 12px;
+	border:1px solid #e0e0e0;
+	border-radius: 8px;
+	background-color: #fafafa;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	tab-size: 4;
+	line-height: 22px;
+}

@@ -1,0 +1,131 @@
+"net/http"包定义了9个请求类型常量
+const (
+	MethodGet     = "GET"
+	MethodHead    = "HEAD"
+	MethodPost    = "POST"
+	MethodPut     = "PUT"
+	MethodPatch   = "PATCH" // RFC 5789
+	MethodDelete  = "DELETE"
+	MethodConnect = "CONNECT"
+	MethodOptions = "OPTIONS"
+	MethodTrace   = "TRACE"
+)
+
+func NewRequestWithContext(ctx context.Context, method, url string, body io.Reader) (*Request, error)
+func NewRequest(method, url string, body io.Reader) (*Request, error) {
+	return NewRequestWithContext(context.Background(), method, url, body)
+}
+
+func (c *Client) Do(req *Request) (*Response, error)
+func (c *Client) Get(url string) (resp *Response, err error)
+func (c *Client) Head(url string) (resp *Response, err error)
+func (c *Client) Post(url, contentType string, body io.Reader) (resp *Response, err error)
+func (c *Client) PostForm(url string, data url.Values) (resp *Response, err error) {
+	c.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
+}
+
+使用DefaultClient请求的简写
+func Get(url string) (resp *Response, err error)
+func Head(url string) (resp *Response, err error)
+func Post(url, contentType string, body io.Reader) (resp *Response, err error)
+func PostForm(url string, data url.Values) (resp *Response, err error)
+
+========== ========== ========== ========== ==========
+
+package request
+
+import (
+	"crypto/tls"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+)
+//要管理HTTP客户端的头域、重定向策略和其他设置，创建一个Client
+//要管理代理、TLS配置、keep-alive、压缩和其他设置，创建一个Transport
+//Client和Transport类型都可以安全的被多个go程同时使用。出于效率考虑，应该一次建立、尽量重用。
+var client = &http.Client{
+	Timeout:   6*time.Second,
+	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, //如为nil则使用DefaultTransport
+}
+
+func Example() {
+	req, err := http.NewRequest(http.MethodPost, "http://php.local/reply.php", http.NoBody)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-Request-Id", "request-id")
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	defer resp.Body.Close() //程序在使用完回复后必须关闭回复的主体。
+
+	body, _ := io.ReadAll(resp.Body)
+	fmt.Print(string(body))
+}
+
+========== ========== ========== ========== ==========
+
+服务端接口
+type Handler interface {
+	ServeHTTP(ResponseWriter, *Request)
+}
+type HandlerFunc func(ResponseWriter, *Request)
+func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
+	f(w, r)
+}
+
+ServeMux是一个HTTP请求多路复用器。它根据已注册模式列表匹配每个传入请求的URL，并调用与URL最匹配的模式的处理程序。
+
+func NewServeMux() *ServeMux { return new(ServeMux) }
+func (mux *ServeMux) Handle(pattern string, handler Handler)
+func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+	mux.Handle(pattern, HandlerFunc(handler))
+}
+
+使用DefaultServeMux提供服务的简写
+func Handle(pattern string, handler Handler)
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request))
+
+Server定义运行HTTP服务器的参数，零值是一个有效的配置。
+
+func (srv *Server) ListenAndServe() error
+
+func (srv *Server) Shutdown(ctx context.Context) error
+不中断任何活动连接的情况下优雅地关闭服务器。
+
+func ListenAndServe(addr string, handler Handler) error {
+	server := &Server{Addr: addr, Handler: handler}
+	return server.ListenAndServe()
+}
+handler为nil时使用DefaultServeMux
+
+========== ========== ========== ========== ==========
+
+判断字节流的文件类型可使用：
+http.DetectContentType(b []byte) string
+能识别的常用文件类型有：
+application/pdf
+application/zip
+image/gif
+image/png
+image/jpeg
+image/bmp
+image/webp
+audio/aiff
+audio/mpeg
+audio/midi
+audio/wave
+application/ogg
+video/avi
+video/webm
+video/mp4
+font/ttf
+font/otf
+网页文档类型返回 text/html; charset=utf-8
+多数文本类型多返回 text/plain; charset=utf-8
+不能识别的类型将返回 application/octet-stream
