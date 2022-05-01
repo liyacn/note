@@ -1,0 +1,45 @@
+Map数据结构的底层实现通常有两种：
+HashMap基于哈希表实现，采用链表解决哈希冲突，无法支持排序，增删查改的性能为O(1)。
+TreeMap基于红黑树实现，有序的同时保证数据操作的性能为O(logn) 。
+Golang内置map结构基于哈希表实现。
+
+========== ========== 利用map的key不重复特性来实现set ========== ==========
+
+type Set[T comparable] map[T]struct{}
+
+func NewSet[T comparable](items []T) Set[T] {
+	s := make(Set[T])
+	for _, item := range items {
+		s[item] = struct{}{}
+	}
+	return s
+}
+
+func (s Set[T]) Add(v T) {
+	s[v] = struct{}{}
+}
+
+func (s Set[T]) Remove(v T) {
+	delete(s, v)
+}
+
+func (s Set[T]) Clear() {
+	clear(s)
+}
+
+func (s Set[T]) Size() int {
+	return len(s)
+}
+
+func (s Set[T]) Has(v T) bool {
+	_, ok := s[v]
+	return ok
+}
+
+func (s Set[T]) Items() []T {
+	items := make([]T, 0, s.Size())
+	for item := range s {
+		items = append(items, item)
+	}
+	return items
+}

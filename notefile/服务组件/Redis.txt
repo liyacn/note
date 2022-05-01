@@ -1,0 +1,75 @@
+Redis下载地址： https://redis.io/downloads/
+可视化管理工具RedisInsight下载地址： https://redis.io/insight/
+命令参考： https://redis.io/docs/latest/commands/
+
+版本号的第二位为奇数时为不稳定版本(例如2.7、2.9、3.1 )，偶数时为稳定版本(例如2.6、2.8、3.0、3.2 )。
+
+配置文件(Ubuntu:/etc/redis/redis.conf;Mac:/usr/local/etc/redis.conf)
+如需要远程连接，用#注释掉 bind 127.0.0.1
+如需设置密码，在requirepass foobared下添加一行: requirepass mypassword
+如需关闭保护模式，将protected-mode值从yes改为no
+
+Redis提供了多种数据结构，具有内置的复制、Lua脚本、LRU回收、事务和不同级别的磁盘持久性。
+可以通过定期将数据集转储到磁盘或将每个命令附加到基于磁盘的日志来持久化数据，也可以禁用持久性。
+Redis还支持事务、pub/sub、lua脚本、带生存期限的key、LRU淘汰key、自动故障切换。
+单个Redis实例可支持2^32个键，每个hash、list、set、sorted-set可以存储2^32个元素。
+
+客户端可通过redis-cli命令连接redis服务，命令不区分大小写，键值区分大小写。
+查看帮助： redis-cli --help
+连续统计可以实时地监控redis实例： redis-cli --stat
+扫描数据集中的大key： redis-cli --bigkeys
+进入监视模式，标准输出打印活动Redis实例接收到的所有命令： redis-cli monitor
+延迟检查： redis-cli --latency
+默认每隔15秒重新采样： redis-cli --latency-history
+检查运行redis的计算机的延时： redis-cli --latency-dist
+
+redis-cli默认连接到127.0.0.1:6379，可通过-h参数指定hostname，通过-p参数指定port。
+eg: redis-cli -h redis15.localnet.org -p 6390
+退出redis-cli： quit
+
+> HELP @<category> 查看该分类下所有命令，分类包括：
+    @generic
+    @string
+    @list
+    @set
+    @sorted_set
+    @hash
+    @pubsub
+    @transactions
+    @connection
+    @server
+    @scripting
+    @hyperloglog
+    @cluster
+    @geo
+    @bitmap
+    @stream
+> HELP <command-name> 查看单个命令的介绍
+
+通过在命令名前加上数字前缀，可以在交互模式下多次运行同一命令。
+eg: 5 INCR mycounter
+
+数据类型：
+String 存储字节序列，包括文本、序列化对象和二进制数组。
+    通常用于缓存，还实现计数器并执行按位操作。默认情况下，单个Redis字符串最大为512M。
+Hash 散列是一种记录类型，其结构是字段-值对的集合。
+    可以使用哈希来表示基本对象和存储计数器分组等。每个哈希最多可以存储2^32-1个字段值对。
+List 按照插入顺序排列的字符串的链接列表。
+    常用于实现堆栈和队列、为后台工作系统构建队列管理。最大长度是2^32-1个元素。
+Set 唯一字符串的无序集合。
+    可用于：跟踪唯一项目（例如，跟踪访问给定博客文章的所有唯一IP地址）；
+    表示关系（例如，具有给定角色的所有用户的集合）；执行常用的集合运算，如交集、并集和差集。
+    最大可存放2^32-1个元素。
+Sorted-set 唯一字符串的有序集合，按每个字符串的关联分数排序，当多个字符串具有相同的分数时按字典顺序排序。
+    可用于：排行榜、限速器。
+Geospatial 地理空间索引，存储和搜索坐标，用于查找给定地理半径或边界框内的位置。
+Bitmap 位图是字符串数据类型的扩展，可以对一个或多个字符串执行按位运算。
+    可用于：集合的成员对应于整数0-N的情形的有效集合表示；
+    对象权限，其中每一位表示一个特定权限，类似于文件系统存储权限的方式。
+Bitfield 位域可以有效地在一个字符串值中编码多个计数器，提供原子的获取、设置和递增操作，并支持不同的溢出策略。
+HyperLogLog 提供了基数的概率估计。以完美的准确性换取了高效的空间利用率。
+    可以估计最多包含2^64个成员的集合的基数。
+Stream 流数据有助于按事件发生的顺序记录事件，然后将它们联合起来进行处理。
+    可用于：事件追踪、监控、通知。
+    Redis为每个流条目生成一个唯一的ID。可以使用这些ID在以后检索它们的关联条目，或者读取和处理流中的所有后续条目。
+    支持多种修剪策略（防止流无限增长）和多个消费策略。
