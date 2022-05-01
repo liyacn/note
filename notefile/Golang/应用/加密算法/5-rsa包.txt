@@ -1,0 +1,78 @@
+"crypto/rsa"包实现了PKCS#1规定的RSA加密算法。
+
+type PublicKey struct {
+	// ...
+}
+PublicKey代表一个RSA公钥
+
+func (pub *PublicKey) Equal(x crypto.PublicKey) bool
+报告pub和x是否具有相同的值。
+
+func (pub *PublicKey) Size() int
+返回以字节为单位的模数大小。此公钥的原始签名和密文大小相同。
+
+type PrivateKey struct {
+	PublicKey
+	// ...
+}
+PrivateKey 代表一个RSA私钥
+
+func GenerateMultiPrimeKey(random io.Reader, nprimes int, bits int) (*PrivateKey, error)
+使用随机数据生成器random生成一对具有指定字位数的多素数RSA密钥。
+本包没有为多素数RSA实现CRT优化，因此具有两个以上素数的密钥将具有更差的性能。建议使用GenerateKey：
+func GenerateKey(random io.Reader, bits int) (*PrivateKey, error) { return GenerateMultiPrimeKey(random, 2, bits) }
+
+func (priv *PrivateKey) Validate() error
+对密钥执行基本的健全性检查。如果密钥有效，则返回nil，否则返回描述问题的错误。
+
+func (priv *PrivateKey) Precompute()
+执行一些计算，以加快将来的私钥操作。
+
+func (priv *PrivateKey) Equal(x crypto.PrivateKey) bool
+报告priv和x是否具有相等的值，忽略预先计算的值。
+
+func (priv *PrivateKey) Public() crypto.PublicKey
+返回对应的公钥
+
+func EncryptOAEP(hash hash.Hash, random io.Reader, pub *PublicKey, msg []byte, label []byte) ([]byte, error)
+使用RSA-OAEP加密给定消息。random参数被用作熵的来源，以确保对同一消息加密两次不会产生相同的密文。
+消息长度不得超过 pub.Size()-2*hash.Size()-2
+
+func DecryptOAEP(hash hash.Hash, random io.Reader, priv *PrivateKey, ciphertext []byte, label []byte) ([]byte, error)
+解密RSA-OAEP算法加密的数据。随机参数是遗留的并被忽略，它可以是nil。
+hash函数和label参数必须与加密时使用的相同。
+
+func EncryptPKCS1v15(random io.Reader, pub *PublicKey, msg []byte) ([]byte, error)
+使用RSA和PKCS#1v1.5中的填充方案加密给定消息。random参数被用作熵的来源，以确保对同一消息加密两次不会产生相同的密文。
+消息长度不得超过 pub.Size()-11。
+警告：使用此函数加密会话密钥以外的明文是危险的。在新协议中使用OAEP。
+
+func DecryptPKCS1v15(random io.Reader, priv *PrivateKey, ciphertext []byte) ([]byte, error)
+使用RSA和来自PKCS#1v1.5的填充方案解密明文。random参数是遗留的并被忽略，它可以是nil。
+注意：无论此函数是否返回错误，都会泄露秘密信息。
+
+func DecryptPKCS1v15SessionKey(random io.Reader, priv *PrivateKey, ciphertext []byte, key []byte) error
+
+func SignPKCS1v15(random io.Reader, priv *PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error)
+使用PKCS#1v1.5规定的RSASSA-PKCS1-V1_5-SIGN签名方案计算签名。random参数是遗留的并被忽略，它可以是nil。
+hashed必须是使用提供给本函数的hash参数对（要签名的）原始数据进行hash的结果。
+
+func VerifyPKCS1v15(pub *PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error
+验证PKCS#1v1.5签名。合法的签名会返回nil，否则表示签名不合法。
+hashed是使用提供的hash参数对（要签名的）原始数据进行hash的结果。sig是签名。
+
+type PSSOptions struct {
+	SaltLength int
+	Hash crypto.Hash
+}
+PSSOptions包含用于创建和验证PSS签名的选项。
+
+func SignPSS(rand io.Reader, priv *PrivateKey, hash crypto.Hash, digest []byte, opts *PSSOptions) ([]byte, error)
+采用RSASSA-PSS方案计算签名。
+hashed必须是使用提供给本函数的hash参数对（要签名的）原始数据进行hash的结果。
+opts参数可以为nil，此时会使用默认参数。
+
+func VerifyPSS(pub *PublicKey, hash crypto.Hash, digest []byte, sig []byte, opts *PSSOptions) error
+验证一个PSS签名。合法的签名会返回nil，否则表示签名不合法。
+hashed是使用提供给本函数的hash参数对（要签名的）原始数据进行hash的结果。
+opts参数可以为nil，此时会使用默认参数。

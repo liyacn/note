@@ -1,0 +1,58 @@
+Go的函数、变量、常量、自定义类型、包(package)的命名方式遵循以下规则：
+	1）首字符可以是任意的Unicode字符或者下划线
+	2）剩余字符可以是Unicode字符、下划线、数字
+	3）字符长度不限
+
+Go只有25个关键字
+	break        default      func         interface    select
+	case         defer        go           map          struct
+	chan         else         goto         package      switch
+	const        fallthrough  if           range        type
+	continue     for          import       return       var
+
+有四种主要声明方式：
+	var（声明变量）, const（声明常量）, type（声明类型） ,func（声明函数）。
+
+声明可见性：
+	1）声明在函数内部，是函数的本地值，类似private
+	2）声明在函数外部，是对当前包可见(包内所有.go文件都可见)的全局值，类似protect
+	3）声明在函数外部且首字母大写是所有包可见的全局值，类似public
+
+内置常量：
+	true  false  iota  nil
+
+内置类型：
+	bool  string
+	int8  int16  int32(rune)  int64  int  
+	uint8(byte)  uint16  uint32  uint64  uint  uintptr
+	float32  float64  
+	complex64  complex128  
+
+泛型约束：
+any是空接口interface{}的别名。
+comparable是一个接口，表示可以使用==或者!=比较的所有类型的集合，它只能用作（或嵌入）类型约束。
+
+内置函数：
+	append(slice []Type, elems ...Type) []Type
+	copy(dst, src []Type) int
+	delete(m map[Type]Type1, key Type)
+	len(v Type) int
+	cap(v Type) int
+	make(t Type, size ...IntegerType) Type
+	new(Type) *Type
+	max[T cmp.Ordered](x T, y ...T) T
+	min[T cmp.Ordered](x T, y ...T) T
+	complex(r, i FloatType) ComplexType
+	real(c ComplexType) FloatType
+	imag(c ComplexType) FloatType
+	clear[T ~[]Type | ~map[Type]Type1](t T)
+	close(c chan<- Type)
+	panic(v any)
+	recover() any
+	print(args ...Type)
+	println(args ...Type)
+
+内置接口：
+	type error interface {
+		Error() string
+	}
