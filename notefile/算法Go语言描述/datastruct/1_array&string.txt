@@ -1,0 +1,42 @@
+数组（Array）是一种线性表数据结构，用一组连续的内存空间来存储一组具有相同类型的数据。
+
+在Go语言中数组是一个值类型，而不是一个指向数组内存起始位置的指针，也不能和同类型的指针进行转化。
+所有的值类型变量在赋值和作为参数传递时都将产生一次复制动作。
+
+Go语言中切片是对数组的抽象，可以看做动态数组。
+它底层的数据结构只包含3个元素：数组、长度和容量，其中数组用来存储元素数据。
+type slice struct {
+	array unsafe.Pointer
+	len   int
+	cap   int
+}
+
+Go语言的字符串底层实现采用了指针和长度两个属性。
+字符串类型的值实际上是一个指向底层字节数组的指针，以及表示字符串长度的整数值。
+type stringStruct struct {
+	str unsafe.Pointer
+	len int
+}
+
+字符串和字节数组的互转一般直接使用数据类型转换的方法：s=string([]byte) b=[]byte(string)
+只要是发生变量数据类型转换都会发生内存拷贝。通过指针共享可以实现零拷贝转换：
+func StringToBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(
+		&struct {
+			string
+			int
+		}{s, len(s)},
+	))
+}
+func BytesToString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+或（v1.20+）：
+func StringToBytes(s string) []byte {
+	return unsafe.Slice(unsafe.StringData(s), len(s))
+}
+func BytesToString(b []byte) string {
+	return unsafe.String((*byte)(unsafe.SliceData(b)), len(b))
+}
+注意！这种转换是不安全的，由于字符串是不可变的，因此对其底层字节数组的赋值操作将会导致异常退出：
+unexpected fault address
