@@ -1,0 +1,49 @@
+文档参考：
+https://cn.vuejs.org/
+https://cn.vitejs.dev/
+
+========== ========== 初始化vue项目 ========== ==========
+
+1. npm init vue@latest
+2. 提示 Need to install the following packages: create-vue@xxx 输入y
+3. 依提示输入项目名称，如：vue3-admin
+4. 勾选：Add TypeScript,Add Vue Router,Add Pinia,Add ESLint,Add Prettier
+5. 根据提示进入目录，运行命令安装和启动项目：npm install && npm run dev
+
+========== ========== vite配置 ========== ==========
+
+1. 根目录下创建环境变量文件：.env.development，.env.testing，.env.production
+2. 写入自定义环境变量以VITE_开头
+3. 在package.json文件scripts下增加以下内容
+    "test": "vite --mode testing",
+    "build:test": "vite build --mode testing",
+
+代码中使用环境变量：import.meta.env.VITE_XXX
+运行dev,test命令：
+  npm run dev
+  npm run test
+编译test,prod命令：
+  npm run build:test
+  npm run build
+
+开发环境配置本地联调：
+1. 在.env.[mode].local中配置接口请求的域名为/api
+2. 在vite.config.ts配置本地开发代理置
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:6000", //联调地址
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  },
+
+========== ========== 部署项目 ========== ==========
+
+1. 编译后生成dist目录复制到指定目录例如/www
+2. nginx的server下指定配置：
+  location / {
+    root       /www;
+    try_files  $uri  $uri/  /index.html;
+  }

@@ -1,0 +1,24 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+)
+
+func main() {
+	//func Int(name string, value int, usage string) *int
+	var a = flag.Int("a", 1, "number a") //返回一个指针变量
+
+	var b string //先声明一个变量
+	//func StringVar(p *string, name string, value string, usage string)
+	flag.StringVar(&b, "b", "hello", "string b") //再通过StringVar将该类型用于flag解析
+
+	flag.Parse() //在所有flag都注册之后调用，解析命令行参数写入注册的flag里
+
+	fmt.Println(*a, b)
+	//运行 go run main.go 打印出 1 hello
+	//运行 go run main.go -a=2 -b=world 打印出 2 world
+	//go run main.go -c=3 异常退出2，flag provided but not defined
+
+	//与上面的Int和String类似还有相应的Bool、Int64、Uint、Uint64、Float64、Duration方法。
+}
