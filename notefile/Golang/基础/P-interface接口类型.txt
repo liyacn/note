@@ -1,0 +1,74 @@
+接口是一个或多个方法签名的集合。
+任何类型的方法集中只要拥有该接口'对应的全部方法'签名。就表示它"实现"了该接口，无须在该类型上显式声明实现了哪个接口。
+所谓对应方法，是指有相同名称、参数列表(不包括参数名)以及返回值。当然，该类型还可以有其他方法。
+
+接口只有方法声明，没有实现，没有数据字段。接口可以匿名嵌入其他接口，或嵌入到结构中。
+对象赋值给接口时，会发生拷贝，而接口内部存储的是指向这个复制品的指针，既无法修改复制品的状态，也无法获取指针。
+只有当接口存储的类型和对象都为nil时，接口才等于nil。
+接口调用不会做receiver的自动转换。
+接口同样支持匿名字段方法。
+接口也可实现类似OOP中的多态。
+空接口可以作为任何类型数据的容器。
+一个类型可实现多个接口。
+接口命名习惯以er结尾。
+
+interface类型可以定义一组方法，但是这些不需要实现。并且interface不能包含任何变量。
+interface类型默认是一个指针。
+	type example interface{
+		Method1(参数列表) 返回值列表
+		Method2(参数列表) 返回值列表
+		…
+	}
+
+如果一个变量含有了多个interface类型的方法，那么这个变量就实现了多个接口。
+如果一个变量只含有了1个interface的部分方法，那么这个变量没有实现这个接口。
+
+多态：一种事物的多种形态，都可以按照统一的接口进行操作。
+type Stringer interface {
+	String() string
+}
+type Printer interface {
+	Stringer // 接口嵌入
+	Print()
+}
+type User struct {
+	name string
+}
+func (u *User) String() string {
+	return u.name
+}
+func (u *User) Print() {
+	fmt.Println(u.String())
+}
+func main() {
+	var t Printer = &User{"Tom"} // *User 方法集包含 String、Print。
+	t.Print()
+}
+
+空接口interface{}没有任何方法签名，也就意味着任何类型都实现了空接口。其作用类似面向对象语言中的根对象object。
+
+Golang接口执行机制：接口对象由接口表指针和数据指针组成。
+接口表存储元数据信息，包括接口类型、动态类型，以及实现接口的方法指针。
+无论是反射还是通过接口调用方法，都会用到这些信息。
+数据指针持有的是目标对象的只读复制品，复制完整对象或指针。
+
+type Stringer interface {
+	String() string
+}
+type User struct {
+	name string
+}
+func (u *User) String() string {
+	return u.name
+}
+func main() {
+	var t any = &User{"Tom"}
+	if p, ok := t.(Stringer); ok {
+		println(p.String())
+	}
+	if u, ok := t.(*User); ok {
+		println(u.String())
+	}
+}
+
+超集接口对象可转换为子集接口，反之出错。

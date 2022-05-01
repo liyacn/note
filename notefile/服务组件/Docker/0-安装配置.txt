@@ -1,0 +1,43 @@
+官网下载安装docker-desktop： https://docs.docker.com
+docker命令参考：https://docs.docker.com/engine/reference/commandline/cli/
+
+查看docker版本： docker version
+查看信息： docker info
+
+docker的daemon配置是一个json文件，位于$HOME/.docker/daemon.json
+国内镜像加速，可以在daemon配置中添加
+  "registry-mirrors":[
+    "https://hub-mirror.c.163.com",
+    "https://ccr.ccs.tencentyun.com",
+    "https://mirror.baidubce.com",
+    "https://dockerproxy.com"
+  ],
+配置几个国内常用的镜像地址，如果有不能使用的，会切换到可以使用的镜像来拉取。
+尝试拉取镜像测试上面几个国内镜像源是否有效：
+docker pull hub-mirror.c.163.com/library/nginx
+docker pull ccr.ccs.tencentyun.com/library/nginx
+docker pull mirror.baidubce.com/library/nginx
+docker pull dockerproxy.com/library/nginx
+
+拉取镜像： docker pull IMAGE_NAME[:TAG]
+TAG不指定则默认为latest
+
+构建镜像: docker build [OPTIONS] PATH | URL | -
+--file , -f 指定Dockerfile的名称，默认是当前目录下的Dockerfile
+--tag , -t 命名镜像，格式 name:version
+--build-arg KEY=VALUE 指定构建时Dockerfile内的ARG命令参数
+--target STAGE 指定目标阶段
+
+容器运行镜像： docker run [OPTIONS] IMAGE[:TAG|@DIGEST] [COMMAND] [ARG...]
+--detach , -d 后台运行容器
+--name 命名容器
+--publish , -p 端口映射，格式 host_port:container_port
+--volume , -v 挂载文件目录，格式 host_src:container_src
+示例：
+docker run -d -p 6380:6379 redis:6.2
+docker run -d -v /php-study/script:/var/www/html php:7.4-fpm
+
+查看镜像列表： docker images
+查看正在运行的容器： docker ps
+
+容器内访问宿主机，host地址需使用host.docker.internal代替127.0.0.1

@@ -1,0 +1,55 @@
+Go语言提供了一种机制在运行时更新变量和检查它们的值、调用它们的方法，但是在编译时并不知道这些变量的具体类型，这称为反射机制。
+反射带来的灵活性是一把双刃剑，作为一种元编程方式可以减少重复代码，但是过量的使用会使程序逻辑变得难以理解并且运行缓慢。
+标准库"reflect"包实现了运行时的反射能力，能够让程序操作不同类型的对象。
+TypeOf函数返回Type类型信息，ValueOf函数返回Value数据的运行时表示。通过Elem()获得指针指向的类型。
+
+Type接口表示反射类型，Value结构体表示反射对象，Kind常量表示反射种类。
+不是所有类型都可以调用Type/Value的全部方法，需先使用Kind方法判断类型后再调用相应的特定方法，调用非该类型支持的方法会panic。
+
+Laws of Reflection：
+    Reflection goes from interface value to reflection object.
+    Reflection goes from reflection object to interface value.
+    To modify a reflection object, the value must be settable.
+
+========== ========== 简单使用 ========== ==========
+
+打印底层值的类型
+{
+	for _, item := range []any{'a', float32(3.14), "hi", []byte{127, 0}} {
+		switch v := reflect.ValueOf(item); v.Kind() {
+		case reflect.String:
+			fmt.Println("string:", v.String())
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			fmt.Println("int:", v.Int())
+		case reflect.Float32, reflect.Float64:
+			fmt.Println("float:", v.Float())
+		default:
+			fmt.Println("other kind:", v.Kind())
+		}
+	}
+}
+一般场景使用type-switch断言类型即可，非必要不使用反射。
+
+打印变量类型名称，可用于尝试获得错误类型
+{
+	a := "a"
+	b := &a
+	c := &b
+	fmt.Println(
+		reflect.TypeOf(a).String(),     //string
+		reflect.TypeOf(b).String(),     //*string
+		reflect.TypeOf(c).String(),     //**string
+		reflect.ValueOf(a).Interface(), //a
+		reflect.ValueOf(b).Interface(), //0x14000096d50
+		reflect.ValueOf(c).Interface(), //0x140000aa030
+	)
+	_, err1 := http.Get("https://www.google.com")
+	m := make(map[string]any)
+	err2 := json.Unmarshal([]byte{}, &m)
+	err3 := os.Remove("nofile")
+	fmt.Println(
+		reflect.TypeOf(err1).String(),                  //*url.Error
+		reflect.TypeOf(err2).String(),                  //*json.SyntaxError
+		reflect.TypeOf(err3).String(),                  //*fs.PathError
+	)
+}

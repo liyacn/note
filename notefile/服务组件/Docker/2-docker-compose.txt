@@ -1,0 +1,44 @@
+compose文件参考： https://docs.docker.com/compose/compose-file/
+compose命令参考： https://docs.docker.com/compose/reference/
+
+docker-compose用于单机管理编排容器，将多个相关容器一次性启动。
+docker-desktop默认包含V2版本的docker-compose，可通过命令行查看：
+docker compose version
+
+compose-file是一个yaml文件，默认文件名为compose.yaml，兼容compose.yml，
+也向后兼容docker-compose.yaml和docker-compose.yml
+
+构建镜像，(重新)创建服务，启动服务，关联容器
+docker compose up -d
+默认会从当前目录下寻找compose文件，也可通过-f参数指定。
+
+停止运行容器：
+docker compose stop
+停止并释放容器：
+docker compose down
+
+========== ========== compose.yaml示例 ========== ==========
+
+name: go-project #required，等价于compose命令的--project-name
+services: #required
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+  script-cronjob:
+    <<: &script
+      image: "script"
+      depends_on:
+        - redis
+      build:
+        context: "./github/go-project"
+        args:
+          - "srv=script"
+    command: "cronjob"
+    volumes:
+      - ./log/script-cronjob:/app/docs/log
+  script-refresh-token:
+    <<: *script #使用锚点语法复用相同配置
+    command: "refresh:token"
+    volumes:
+      - ./log/script-refresh-token:/app/docs/log
