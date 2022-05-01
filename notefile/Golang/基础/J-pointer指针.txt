@@ -1,0 +1,66 @@
+区别于C/C++中的指针，Go语言中的指针不能进行偏移和运算，是安全指针。
+当一个指针被定义后没有分配到任何变量时，它的值为nil，没有NULL常量。
+操作符"&"（取地址符）取变量地址，"*"（取值符）透过指针访问目标对象。
+Golang支持指针类型*T，指针的指针**T，以及包含包名前缀的*.T。
+
+指针声明格式如下：
+	var name *类型
+例如：
+	var ip *int     // 指向整型，声明一个int值得指针变量
+	var sp *string  // 指向字符串类型
+
+返回局部变量指针是安全的，编译器会根据需要将其分配在GC Heap上。
+	x := 100
+	return &x // 在堆上分配x内存。但在内联时，也可能直接分配在目标栈。
+
+如果一个指针变量存放的又是另一个指针变量的地址，则称这个指针变量为指向指针的指针变量。
+当定义一个指向指针的指针变量时，第一个指针存放第二个指针的地址，第二个指针存放变量的地址：
+指向指针的指针变量声明格式如下：
+	var ptr **int
+以上指向指针的指针变量为整型。
+访问指向指针的指针变量值需要使用两个*号
+	var a int
+	var ptr *int
+	var pptr **int
+	a = 3000
+	ptr = &a    // 指针ptr地址
+	pptr = &ptr // 指向指针ptr地址
+	fmt.Printf("变量 a = %d\n", a) // 变量 a = 3000
+	fmt.Printf("指针变量 *ptr = %d\n", *ptr) // 指针变量 *ptr = 3000
+	fmt.Printf("指向指针的指针变量 **pptr = %d\n", **pptr) // 指向指针的指针变量 **pptr = 3000
+
+可以在unsafe.Pointer和任意类型指针间进转换。
+	x := 0x12345678
+	p := unsafe.Pointer(&x) // *int -> Pointer
+	n := (*[4]byte)(p)      // Pointer -> *[4]byte
+	for i := 0; i < len(n); i++ {
+		fmt.Printf("%X ", n[i]) // 78 56 34 12 
+	}
+
+将Pointer转换成uintptr，可变相实现指针运算。
+	d := struct {
+		s string
+		x int
+	}{"abc", 100}
+	p := uintptr(unsafe.Pointer(&d)) // *struct -> Pointer -> uintptr
+	p += unsafe.Offsetof(d.x)        // uintptr + offset
+	p2 := unsafe.Pointer(p) // uintptr -> Pointer
+	px := (*int)(p2)        // Pointer -> *int
+	*px = 200               // d.x = 200
+	fmt.Printf("%#v\n", d) // struct { s string; x int }{s:"abc", x:200}
+GC把uintptr当成普通整数对象，它无法阻止"关联"对象被回收。
+
+unsafe.Pointer是一种特殊意义的指针，它可以包含任意类型的地址，有点类似于C语言里的void*指针，全能型的。
+	i := 10
+	ip := &i
+	var fp *float64 = (*float64)(unsafe.Pointer(ip))
+	*fp = *fp * 3
+	fmt.Println(i) // 30
+
+unsafe.Pointer的4个规则。
+任何指针都可以转换为unsafe.Pointer
+unsafe.Pointer可以转换为任何指针
+uintptr可以转换为unsafe.Pointer
+unsafe.Pointer可以转换为uintptr
+
+unsafe是不安全的，所以应该尽可能少的使用它，比如内存的操纵，这是绕过Go本身设计的安全机制的，不当的操作，可能会破坏一块内存，而且这种问题非常不好定位。

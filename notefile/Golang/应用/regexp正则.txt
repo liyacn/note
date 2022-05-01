@@ -1,0 +1,114 @@
+"regexp"包实现了正则表达式搜索。
+正则表达式采用RE2语法（除了\c、\C），和Perl、Python等语言的正则基本一致。
+计数格式x{n}等（不包括x*等格式）中n最大值1000。负数或者显式出现的过大的值会导致解析错误。
+
+func QuoteMeta(s string) string
+返回将s中所有正则表达式元字符都进行转义后字符串。该字符串可以用在正则表达式中匹配字面值s。
+
+func Match(pattern string, b []byte) (matched bool, err error)
+func MatchString(pattern string, s string) (matched bool, err error)
+func MatchReader(pattern string, r io.RuneReader) (matched bool, err error)
+检查b中是否存在匹配pattern的子序列。
+
+type Regexp struct{}
+代表一个编译好的正则表达式，可以被多线程安全地同时使用。
+
+func Compile(expr string) (*Regexp, error)
+解析并返回一个正则表达式。如果成功返回，该Regexp就可用于匹配文本。
+在匹配文本时，该正则表达式会尽可能早的开始匹配，并且在匹配过程中选择回溯搜索到的第一个匹配结果。
+
+func CompilePOSIX(expr string) (*Regexp, error)
+类似Compile但会将语法约束到POSIX-ERE（egrep）语法，并将匹配模式设置为leftmost-longest。
+在匹配文本时，该正则表达式会尽可能早的开始匹配，并且在匹配过程中选择搜索到的最长的匹配结果。
+
+func MustCompile(str string) *Regexp
+类似Compile但会在解析失败时panic，主要用于全局正则表达式变量的安全初始化。
+
+func MustCompilePOSIX(str string) *Regexp
+类似CompilePOSIX但会在解析失败时panic，主要用于全局正则表达式变量的安全初始化。
+
+func (re *Regexp) String() string
+返回用于编译成正则表达式的字符串。
+
+func (re *Regexp) Match(b []byte) bool
+func (re *Regexp) MatchString(s string) bool
+func (re *Regexp) MatchReader(r io.RuneReader) bool
+返回是否存在匹配正则的子串。
+
+func (re *Regexp) Split(s string, n int) []string
+将匹配到的结果作为分隔符将s分割成多个字符串，并返回这些正则匹配结果之间的字符串的切片。
+返回的切片不会包含正则匹配的结果，只包含匹配结果之间的片段。
+当正则表达式re中不含正则元字符时，本方法等价于strings.SplitN。
+参数n绝对返回的子字符串的数量：
+	n > 0 : 返回最多n个子字符串，最后一个子字符串是剩余未进行分割的部分。
+	n == 0: 返回nil (zero substrings)
+	n < 0 : 返回所有子字符串
+
+func (re *Regexp) Find(b []byte) []byte
+返回最左侧的一个匹配结果的[]byte切片。如果没有匹配到，会返回nil。
+
+func (re *Regexp) FindString(s string) string
+Find最左侧的一个匹配结果的字符串。
+如果没有匹配到，会返回""；但如果正则表达式成功匹配了一个空字符串，也会返回""。
+如果需要区分这种情况，使用FindStringIndex或FindStringSubmatch。
+
+func (re *Regexp) FindIndex(b []byte) (loc []int)
+func (re *Regexp) FindStringIndex(s string) (loc []int)
+func (re *Regexp) FindReaderIndex(r io.RuneReader) (loc []int)
+返回最左侧的一个匹配结果的起止位置的切片（显然len(loc)==2）。
+匹配结果可以通过起止位置对入参做切片操作得到：b[loc[0]:loc[1]]。如果没有匹配到，会返回nil。
+
+func (re *Regexp) FindSubmatch(b []byte) [][]byte
+func (re *Regexp) FindStringSubmatch(s string) []string
+返回最左侧的一个匹配结果以及（可能有的）分组匹配的结果的切片。如果没有匹配到，会返回nil。
+
+func (re *Regexp) FindSubmatchIndex(b []byte) []int
+func (re *Regexp) FindStringSubmatchIndex(s string) []int
+func (re *Regexp) FindReaderSubmatchIndex(r io.RuneReader) []int
+返回最左侧的一个匹配结果以及（可能有的）分组匹配的结果的起止位置的切片。
+匹配结果和分组匹配结果可以在入参的偏移量loc[0]到loc[1]-1（包括二者）位置找到。如果没有匹配到，会返回nil。
+
+func (re *Regexp) FindAll(b []byte, n int) [][]byte
+func (re *Regexp) FindAllString(s string, n int) []string
+F返回所有不重叠的匹配结果的切片。如果没有匹配到，会返回nil。
+
+func (re *Regexp) FindAllIndex(b []byte, n int) [][]int
+func (re *Regexp) FindAllStringIndex(s string, n int) [][]int
+返回所有不重叠的匹配结果的起止位置的切片。如果没有匹配到，会返回nil。
+
+func (re *Regexp) FindAllSubmatch(b []byte, n int) [][][]byte
+func (re *Regexp) FindAllStringSubmatch(s string, n int) [][]string
+返回所有不重叠的匹配结果及其对应的（可能有的）分组匹配的结果的切片。如果没有匹配到，会返回nil。
+
+func (re *Regexp) FindAllSubmatchIndex(b []byte, n int) [][]int
+func (re *Regexp) FindAllStringSubmatchIndex(s string, n int) [][]int
+返回所有不重叠的匹配结果及其对应的（可能有的）分组匹配的结果的起止位置的切片
+（第一层表示第几个匹配结果，完整匹配和分组匹配的起止位置对在第二层）。如果没有匹配到，会返回nil。
+
+func (re *Regexp) ReplaceAll(src, repl []byte) []byte
+func (re *Regexp) ReplaceAllString(src, repl string) string
+返回src的一个拷贝，将src中所有re的匹配结果都替换为repl。
+在替换时，repl中的'$'符号会按照Expand方法的规则进行解释和替换，例如$1会被替换为第一个分组匹配结果。
+
+func (re *Regexp) ReplaceAllFunc(src []byte, repl func([]byte) []byte) []byte
+func (re *Regexp) ReplaceAllStringFunc(src string, repl func(string) string) string
+返回src的一个拷贝，将src中所有re的匹配结果（设为matched）都替换为repl(matched)。
+repl返回的字符串被直接使用，不会使用Expand进行扩展。
+
+func (re *Regexp) LiteralPrefix() (prefix string, complete bool)
+返回一个字符串字面值prefix，任何匹配本正则表达式的字符串都会以prefix起始。
+如果该字符串字面值包含整个正则表达式，返回值complete会设为真。
+
+func (re *Regexp) Longest()
+让正则表达式在之后的搜索中都采用"leftmost-longest"模式。
+此方法修改*Regexp，不能同时调用*Regexp的任何方法。
+
+func (re *Regexp) NumSubexp() int
+返回该正则表达式中捕获分组的数量。
+
+func (re *Regexp) SubexpNames() []string
+返回该正则表达式中捕获分组的名字。第一个分组的名字是names[1]，因此，如果m是一个组匹配切片，m[i]的名字是SubexpNames()[i]。
+因为整个正则表达式是无法被命名的，names[0]必然是空字符串。该切片不应被修改。
+
+func (re *Regexp) SubexpIndex(name string) int
+返回具有给定名称的第一个子表达式的索引，若无则返回-1。

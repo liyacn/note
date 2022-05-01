@@ -1,0 +1,159 @@
+"math/rand/v2"包实现了伪随机数生成器，适用于模拟等任务，但不应用于安全敏感的工作。
+"crypto/rand"包实现了一个加密安全的随机数生成器。
+
+========== ========== ========== ========== ==========
+
+type Source interface {
+	Uint64() uint64
+}
+Source为伪随机分布的源，取值范围为[0,1 <<64)。
+ChaCha8/PCG以及系统运行时的runtimeSource均实现了Source接口。
+
+ChaCha8是一个基于ChaCha8的加密强随机数生成器。
+func NewChaCha8(seed [32]byte) *ChaCha8
+
+PCG是一个具有128位内部状态的PCG发生器。
+func NewPCG(seed1, seed2 uint64) *PCG
+
+Rand是一个随机数资源。
+func New(src Source) *Rand
+
+func NewZipf(r *Rand, s float64, v float64, imax uint64) *Zipf
+返回一个齐普夫随机数生成器。k∈[0,imax]使得P(k)与(v+k)**(-s)成正比。s>1,v>=1。
+func (z *Zipf) Uint64() uint64
+
+*Rand具有以下方法：
+Int、Int32、Int64、Uint、Uint32、Uint64、Float32、Float64、
+IntN、Int32N、Int64N、UintN、Uint32N、Uint64N、N、
+Perm、Shuffle、NormFloat64、ExpFloat64
+包级别提供这些方法，使用私有全局变量globalRand调用。
+
+非负伪随机整数：
+func Int() int
+func Int32() int32
+func Int64() int64
+func Uint() uint
+func Uint32() uint32
+func Uint64() uint64
+
+伪随机浮点数[0.0,1.0)：
+func Float32() float32
+func Float64() float64
+
+伪随机整数[0,n)，n<=0时panic：
+func IntN(n int) int
+func Int32N(n int32) int32
+func Int64N(n int64) int64
+func UintN(n uint) uint
+func Uint32N(n uint32) uint32
+func Uint64N(n uint64) uint64
+func N[Int intType](n Int) Int
+
+func Perm(n int) []int
+有n个元素的伪随机排列的切片，[0,n)范围内整数不重复，n<0时panic
+
+func Shuffle(n int, swap func(i, j int))
+打乱一个slice，n为元素个数，以i和j作为索引交换元素，n<0时panic
+
+func NormFloat64() float64
+服从标准正态分布（标准差=1，期望=0），取值范围[-math.MaxFloat64,+math.MaxFloat64]的伪随机float64值，
+如果要生成不同的正态分布值，调用者可用如下代码调整输出： sample = NormFloat64() * 标准差 + 期望
+
+func ExpFloat64() float64
+服从标准指数分布（率参数=1，与期望互为倒数），取值范围(0,+math.MaxFloat64]的伪随机float64值，
+如要生成不同的指数分布值，调用者可用如下代码调整输出： sample = ExpFloat64() / 率参数
+
+========== ========== ========== ========== ==========
+
+package random
+
+import "math/rand/v2"
+
+const (
+	upper  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	lower  = "abcdefghijklmnopqrstuvwxyz"
+	number = "0123456789"
+	char62 = upper + lower + number
+)
+
+func Uppers(n int) string  { return gen(upper, n) }
+func Lowers(n int) string  { return gen(lower, n) }
+func Numbers(n int) string { return gen(number, n) }
+func Strings(n int) string { return gen(char62, n) }
+
+func gen(chars string, n int) string {
+	length := len(chars)
+	buf := make([]byte, n)
+	for i := range buf {
+		buf[i] = chars[rand.IntN(length)]
+	}
+	return string(buf)
+}
+
+// RangeNum 生成[s,l]区间的随机数，可包含负数
+func RangeNum(s, l int) int {
+	if s > l {
+		s, l = l, s
+	}
+	n := rand.IntN(l - s + 1)
+	return n + s
+}
+
+// Shuffle 打乱一个数组
+func Shuffle[T any](sli []T) {
+	rand.Shuffle(len(sli), func(i, j int) {
+		sli[i], sli[j] = sli[j], sli[i]
+	})
+}
+
+// InRate n/d 的概率返回true
+func InRate(n, d int) bool {
+	if n <= 0 {
+		return false
+	}
+	if d <= n {
+		return true
+	}
+	return rand.IntN(d) < n
+}
+
+========== ========== ========== ========== ==========
+
+"crypto/rand"包定义的Reader是一个全局、共享的加密安全随机数生成器。
+在Unix类型系统中，会从/dev/urandom读取；而Windows中会调用系统的API。
+
+func Int(rand io.Reader, max *big.Int) (n *big.Int, err error)
+返回一个在[0, max)区间服从均匀分布的随机值，如果max<=0则会panic。
+
+func Prime(rand io.Reader, bits int) (p *big.Int, err error)
+返回一个具有指定字位数的数字，该数字具有很高可能性是质数。如果从rand读取时出错，或者bits<2会返回错误。
+
+func Read(b []byte) (n int, err error)
+本函数是一个使用io.ReadFull调用Reader.Read的辅助性函数。当且仅当err==nil时，返回值n=len(b)。
+
+========== ========== ========== ========== ==========
+
+package random
+
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"math/big"
+	"strconv"
+)
+
+// Bytes 随机字节数组
+func Bytes(n int) []byte {
+	b := make([]byte, n)
+	rand.Read(b) // nolint
+	return b
+}
+
+// UUID V4版本不带-号的UUID
+func UUID() string { return hex.EncodeToString(Bytes(16)) }
+
+// NumCode 安全的六位数字码
+func NumCode() string {
+	num, _ := rand.Int(rand.Reader, big.NewInt(1e6))
+	return strconv.FormatInt(num.Int64()+1e6, 10)[1:]
+} //优于fmt.Sprintf("%06d", num.Int64())

@@ -1,0 +1,111 @@
+sync包提供了基本的同步基元，如互斥锁。本包的类型的值不应被拷贝。
+除了Once和WaitGroup类型，大部分都是适用于低水平程序线程，高水平的同步使用channel通信更好一些。
+
+Once代表只执行一次动作的对象。需要给每个要执行仅一次的函数都建立一个Once类型的实例。
+func (o *Once) Do(f func()) //当且仅当第一次被调用时才执行函数f。
+func OnceFunc(f func()) func() //用于简化Once写法
+
+func OnceValue[T any](f func() T) func() T
+func OnceValues[T1, T2 any](f func() (T1, T2)) func() (T1, T2)
+返回一个函数，该函数只调用f一次，并返回由f返回的值。返回的函数可以并发调用。
+
+Locker接口代表一个可以加锁和解锁的对象。
+type Locker interface {
+    Lock()
+    Unlock()
+}
+
+Mutex是一个互斥锁，可以创建为其他结构体的字段；零值为解锁状态。
+Mutex类型的锁和线程无关，可以由不同的线程加锁和解锁。
+
+func (m *Mutex) Lock()
+Lock方法锁住m，如果m已经加锁，则阻塞直到m解锁。
+
+func (m *Mutex) Unlock()
+Unlock方法解锁m，如果m未加锁会导致运行时错误。
+
+RWMutex是读写互斥锁。该锁可以被同时多个读取者持有或唯一个写入者持有。
+RWMutex可以创建为其他结构体的字段；零值为解锁状态。
+RWMutex类型的锁也和线程无关，可以由不同的线程加读取锁/写入和解读取锁/写入锁。
+
+func (rw *RWMutex) Lock()
+将rw锁定为写入状态，禁止其他线程读取或者写入。
+
+func (rw *RWMutex) Unlock()
+解除rw的写入锁状态，如果m未加写入锁会导致运行时错误。
+
+func (rw *RWMutex) RLock()
+将rw锁定为读取状态，禁止其他线程写入，但不禁止读取。
+
+func (rw *RWMutex) RUnlock()
+解除rw的读取锁状态，如果m未加读取锁会导致运行时错误。
+
+func (rw *RWMutex) RLocker() Locker
+返回一个互斥锁，通过调用rw.Rlock和rw.Runlock实现了Locker接口。
+
+Map类似go的map[any]any，但可以并发安全使用无需另外加锁。
+
+func (m *Map) Store(key, value any)
+设置或添加键值
+
+func (m *Map) Delete(key any)
+删除指定key
+
+func (m *Map) Load(key any) (value any, ok bool)
+返回指定key在Map的值，ok表示是否有对应的键值
+
+func (m *Map) LoadOrStore(key, value any) (actual any, loaded bool)
+如果存在指定key，则返回对应key存的值和true；否则存入指定键值并返回value和false。
+
+func (m *Map) LoadAndDelete(key any) (value any, loaded bool)
+删除指定key并返回该key先前对应的值，loaded表示是否存在对应键值。
+
+func (m *Map) Swap(key, value any) (previous any, loaded bool)
+交换键的值并返回上一个值（如果有），以及key是否存在。
+
+func (m *Map) CompareAndSwap(key, old, new any) bool
+如果映射中存储的值等于旧值，将交换键的旧值和新值。旧值必须是可比较的类型。
+
+func (m *Map) CompareAndDelete(key, old any) (deleted bool)
+如果键的值等于旧值，将删除该项。旧值必须是可比较的类型。
+
+func (m *Map) Range(f func(key, value any) bool)
+迭代遍历Map
+
+	var m sync.Map
+	m.Store("one", "AAA")
+	m.Store("two", "BBB")
+	v1, ok := m.Load("one")
+	fmt.Println(v1, ok) // AAA true
+	v2, ok := m.LoadAndDelete("two")
+	fmt.Println(v2, ok) // BBB true
+	v3, ok := m.LoadOrStore("three", "CCC")
+	fmt.Println(v3, ok) // CCC false
+	v4, ok := m.Load("four")
+	fmt.Println(v4, ok) // <nil> false
+	m.Range(func(key, value any) bool {
+		fmt.Println(key, value)
+		return true
+	}) /*
+		one AAA
+		three CCC
+	*/
+
+Pool是一个可以分别存取的临时对象的集合。
+type Pool struct {
+    New func() any
+}
+Pool是一个可以分别存取的临时对象的集合。
+Pool中保存的任何item都可能随时不做通告的释放掉。
+如果Pool持有该对象的唯一引用，这个item就可能被回收。
+Pool可以安全的被多个线程同时使用。
+Pool的目的是缓存申请但未使用的item用于之后的重用，以减轻GC的压力。
+也就是说，让创建高效而线程安全的空闲列表更容易。
+Pool的合理用法是用于管理一组静静的被多个独立并发线程共享并可能重用的临时item。
+Pool提供了让多个线程分摊内存申请消耗的方法。
+
+func (p *Pool) Get() any
+从池中选择任意一个item，删除其在池中的引用计数，并提供给调用者。
+
+func (p *Pool) Put(x any)
+将x放入池中。

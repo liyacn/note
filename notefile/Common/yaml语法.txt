@@ -1,0 +1,75 @@
+YAML是一种数据序列化语言，多用于配置文件，扩展名为.yaml或.yml。
+
+yaml使用缩进表示层级关系，缩进时不允许使用Tab键，只允许使用空格。
+缩进的空格数目不重要，只要相同层级的元素左侧对齐即可。
+#表示注释，从这个字符一直到行尾，都会被解析器忽略。
+用“---”即三个破折号表示一份内容的开始，用“...”即三个小数点表示一份内容的结束。
+
+YAML支持的数据类型：对象、数组、纯量（字符串、布尔、整数、浮点数、null、日期时间）。
+
+对象的一组键值对，使用冒号结构表示
+key: val
+对象支持flow风格写法，类似JSON
+hash: { field1: val1, field2: val2 }
+
+一组以“-”开头的数据构成一个数组
+items:
+  - a
+  - b
+数组也支持flow风格写法
+items: [a, b]
+
+纯量直接以字面量的形式表示。
+字符串默认可省略引号，如包含特殊字符(:#\)则需使用引号。
+整数支持二进制表示，浮点数支持科学计数法。
+布尔值用true和false表示。
+null用null或~表示。
+日期时间采用ISO8601格式（2002-01-02T15:04:05+08:00）。缺省时间取0点，缺省时区取UTC。
+日期时间的值不能使用引号，否则会识别为字符串。
+
+单引号字符串会对特殊字符转义，双引号不会。
+单引号之中如果还有单引号，必须连续使用两个单引号转义。
+str: 'It''s OK!' # 等价于 "It's OK!"
+
+多行字符串可以使用|保留换行符，每行的缩进和行尾空白都会被去掉，而额外的缩进会被保留。
+this: |
+    Foo
+    Bar
++表示文字块末尾添加换行，-表示删除字符串末尾的换行。
+s1: |
+    Foo
+s2: |+
+    Foo
+s3: |-
+    Foo
+也可以使用>折叠换行，只有空白行才会被识别为换行，原来的换行符都会被转换成空格。
+that: >
+    Foo
+    Bar
+
+&用来建立锚点（defaults），<<表示合并到当前数据，*用来引用锚点。
+dev:
+    database: app_dev
+    <<: &db
+        adapter: postgres
+        host: localhost
+test:
+    database: app_test
+    <<: *db
+colors:
+    - &r red
+    - green
+    - *r
+等价于
+dev:
+    database: app_dev
+    adapter: postgres
+    host: localhost
+test:
+    database: app_test
+    adapter: postgres
+    host: localhost
+colors:
+    - red
+    - green
+    - red

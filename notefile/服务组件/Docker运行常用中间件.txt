@@ -1,0 +1,29 @@
+本地开发调试可用docker运行常用数据库、消息队列、缓存中间件
+
+docker run -d --name redis -p 6379:6379 redis:6.2
+用户名和密码均为空
+
+docker run -d --name mongodb -p 27017:27017 -e TZ=Asia/Shanghai mongo:7.0
+可选: -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root
+默认用户名和密码均为空
+
+docker run -d --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e TZ=Asia/Shanghai mysql:8.0
+可选： -e MYSQL_USER=my_user -e MYSQL_PASSWORD=my_pwd -e MYSQL_DATABASE=my_db
+用户名和密码均为root
+
+docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e TZ=Asia/Shanghai postgres:17
+可选： -e POSTGRES_USER=postgres -e POSTGRES_DB=my_db
+用户名和密码均为postgres
+
+docker network create nsq-net
+docker run -d --name nsqlookupd --network nsq-net -p 4160:4160 -p 4161:4161 nsqio/nsq /nsqlookupd
+docker run -d --name nsqd --network nsq-net -p 4150:4150 -p 4151:4151 nsqio/nsq /nsqd --lookupd-tcp-address=nsqlookupd:4160 --broadcast-address=172.xx.xx.1 #宿主机ip必须指定
+docker run -d --name nsqadmin --network nsq-net -p 4171:4171 nsqio/nsq /nsqadmin --lookupd-http-address=nsqlookupd:4161
+推荐使用docker-compose编排，运行在统一容器组，免手动创建network
+
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-management
+可选: -e RABBITMQ_DEFAULT_USER=guest -e RABBITMQ_DEFAULT_PASS=guest
+默认用户名和密码均为guest
+
+docker run -d --name kafka -p 9092:9092 apache/kafka:4.1.1
+用户名和密码均为空

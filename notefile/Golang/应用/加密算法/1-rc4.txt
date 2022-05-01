@@ -1,0 +1,37 @@
+"crypto/rc4"包实现了RC4加密算法。
+RC4被广泛使用，但设计上的缺陷使它很少用于较新的协议中。 
+
+========== ========== ========== ========== ==========
+
+package crypt
+
+import (
+	"crypto/rc4"
+	"encoding/base64"
+)
+
+// RC4 key, at least 1 byte and at most 256 bytes.
+
+func RC4Encrypt(key, src []byte) (string, error) {
+	c, err := rc4.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	dst := make([]byte, len(src))
+	c.XORKeyStream(dst, src)
+	return base64.StdEncoding.EncodeToString(dst), nil
+}
+
+func RC4Decrypt(key []byte, s string) ([]byte, error) {
+	src, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil, err
+	}
+	c, err := rc4.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	dst := make([]byte, len(src))
+	c.XORKeyStream(dst, src)
+	return dst, nil
+}

@@ -1,0 +1,63 @@
+begin ⇔ end
+开始 ⇔ 结束
+
+start ⇔ stop
+启动 ⇔ 停止
+
+before ⇔ after
+在之前 ⇔ 在之后
+
+since ⇔ until
+自……始 ⇔ 至……止
+
+open ⇔ close
+打开 ⇔ 关闭
+
+in ⇔ out
+进 ⇔ 出
+里 ⇔ 外
+
+on ⇔ off
+开 ⇔ 关
+online ⇔ offline
+在线 ⇔ 离线
+
+登入 ⇔ 登出
+login ⇔ logout (UNIX系统)
+logon ⇔ logoff (windows系统)
+sign in ⇔ sign out (多用于网站)
+
+enter ⇔ exit
+进入 ⇔ 退出
+
+plaintext ⇔ ciphertext
+明文 ⇔ 密文
+
+encrypt ⇔ decrypt
+加密 ⇔ 解密
+
+encode ⇔ decode
+编码 ⇔ 解码
+
+enabled ⇔ disabled
+启用 ⇔ 禁用
+
+accept ⇔ reject
+接受 ⇔ 拒绝
+
+allow ⇔ deny
+允许 ⇔ 禁止
+
+show ⇔ hide
+显示 ⇔ 隐藏
+
+plus ⇔ minus
++号 ⇔ -号
+
+increase ⇔ decrease
+增加（量） ⇔ 减少（量）
+
+add ⇔ substract
+加+ ⇔ 减-
+multiply ⇔ divide
+乘× ⇔ 除÷

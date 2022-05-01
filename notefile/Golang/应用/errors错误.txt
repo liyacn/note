@@ -1,0 +1,34 @@
+"errors"包实现了错误处理的方法。
+
+func New(text string) error
+使用指定字符串创建一个error类型
+
+func Unwrap(err error) error
+Go语言没有提供Wrap函数，而是扩展了fmt.Errorf函数，然后加了一个%w，通过这种方式生成嵌套错误。
+Unwrap返回嵌套的原始错误。
+
+func As(err error, target any) bool
+As在错误树中找到与目标匹配的第一个错误，如果找到一个错误，则将目标设置为该错误值并返回true，否则返回false。
+当err包装多个错误时会递归调用Unwrap方法。如果target为nil将panic。
+
+func Is(err, target error) bool
+报告错误树中的任何错误是否与目标匹配。当err包装多个错误时会递归调用Unwrap方法。
+
+func Join(errs ...error) error
+返回一个包装给定错误errs的error，任何nil的错误值都会被丢弃，如果errs不包含非nil值，将返回nil。
+返回error方法的字符串格式为每个错误元素以换行符连接的结果。
+
+========== ========== ========== ========== ==========
+
+if errors.Is(err, fs.ErrExist)
+优于
+if err == fs.ErrExist
+
+var perr *fs.PathError
+if errors.As(err, &perr) {
+	fmt.Println(perr.Path)
+}
+优于
+if perr, ok := err.(*fs.PathError); ok {
+	fmt.Println(perr.Path)
+}

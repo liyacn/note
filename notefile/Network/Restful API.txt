@@ -1,0 +1,33 @@
+REST全称是Representational State Transfer，中文意思是表述性状态转移。
+常用的HTTP动词有下面五个（括号里是对应的SQL命令）。
+    GET（SELECT）：从服务器取出资源（一项或多项）。即获取数据
+    POST（CREATE）：在服务器新建一个资源。 即添加数据
+    PUT（UPDATE）：在服务器更新资源（客户端提供改变后的完整资源）。即更新数据
+    PATCH（UPDATE）：在服务器更新资源（客户端提供改变的属性）。即更新数据
+    DELETE（DELETE）：从服务器删除资源。即删除数据
+示例：
+    GET /zoos	列出所有动物园
+    POST /zoos	新建一个动物园
+    GET /zoos/:id	获取某个指定动物园的信息
+    PUT /zoos/:id	更新某个指定动物园的信息（提供该动物园的全部信息）
+    PATCH /zoos/:id	更新某个指定动物园的信息（提供该动物园的部分信息）
+    DELETE /zoos/id	删除某个动物园
+    GET /zoos/:id/animals	列出某个指定动物园的所有动物
+    DELETE /zoos/:id/animals/id	删除某个指定动物园的指定动物
+针对不同操作，服务器向用户返回的结果应该符合以下规范：
+    GET /collections	返回资源对象的列表（数组）
+    GET /collection/resource	返回单个资源对象
+    POST /collection	返回新生成的资源对象
+    PUT /collection/resource	返回完整的资源对象
+    PATCH /collection/resource	返回完整的资源对象
+    DELETE /collection/resource	返回一个空文档
+uri规范
+    使用名词
+    method对应不同的请求动作
+    使用连字符（-）而不是（_）来提高URI的可读性
+    在URI中使用小写字母
+    不要使用文件扩展名
+    不要在末尾使用/
+    使用http状态码定义api执行结果
+    使用JSON作为通信格式
+    使用版本控制

@@ -1,0 +1,103 @@
+Golang方法总是绑定对象实例，并隐式将实例作为第一实参(receiver)。
+	• 只能为当前包内命名类型定义方法。
+	• 参数receiver可任意命名。如方法中未曾使用，可省略参数名。
+	• 参数receiver类型可以是T或*T。基类型T不能是接口或指针。 
+	• 不支持方法重载，receiver只是参数签名的组成部分。
+	• 可用实例value或pointer调用全部方法，编译器自动转换。
+
+一个方法就是一个包含了接受者的函数，接受者可以是命名类型或者结构体类型的一个值或者是一个指针。
+所有给定类型的方法属于该类型的方法集。
+
+方法定义：
+	func (recevier type) methodName(参数列表)(返回值列表){}
+参数和返回值可以省略
+
+type MyInt int
+func (i MyInt) String() string {
+	return strconv.Itoa(int(i))
+}
+func main() {
+	i := MyInt(4)
+	println(i.String())
+}
+
+当接受者不是一个指针时，该方法操作对应接受者的值的副本，而不是指针操作。
+当接受者是指针时，即使用值类型调用那么函数内部也是对指针的操作。
+type C struct{}
+func (*C) Pointer() {
+	println("pointer")
+}
+func (C) Value() {
+	println("value")
+}
+func main() {
+	c := C{}
+	c.Pointer()
+	c.Value()
+	p := &c
+	p.Pointer()
+	p.Value()
+}
+
+struct匿名字段，可以像字段成员那样访问匿名字段方法，编译器负责查找。
+通过匿名字段，可获得和继承类似的复用能力。依据编译器查找次序，只需在外层定义同名方法，就可以实现"override"。
+type Base struct{}
+type Extend struct {
+	*Base
+}
+func (*Base) Do() {
+	println("d")
+}
+func (*Base) Say() {
+	println("b")
+}
+func (*Extend) Say() {
+	println("e")
+}
+func main() {
+	e := &Extend{&Base{}}
+	e.Do()       //do
+	e.Say()      //e
+	e.Base.Say() //b
+}
+
+每个类型都有与之关联的方法集，这会影响到接口实现规则。
+	• 类型T方法集包含全部receiver为T的方法。
+	• 类型*T方法集包含全部receiver为T和*T方法。
+	• 如类型S包含匿名字段T，则S和*S方法集包含T方法。 
+	• 如类型S包含匿名字段*T，则S和*S方法集包含T和*T方法。 
+	• 不管嵌入T或*T，*S方法集总是包含T和*T方法。
+
+用实例value和pointer调用方法(含匿名字段)不受方法集约束，编译器总是查找全部方法，并自动转换receiver实参。
+
+Go语言中内部类型方法集提升的规则：
+	类型T方法集包含全部receiver为T的方法。
+	类型*T方法集包含全部receiver为T和*T的方法。
+	如类型S包含匿名字段T，则S和*S方法集包含T方法。
+	当嵌入一个类型，嵌入类型的接受者为值类型的方法将被提升，可以被外部类型的值和指针调用。
+	如类型S包含匿名字段*T，则S和*S方法集包含T和*T方法。
+	当我们嵌入一个类型的指针，嵌入类型的接受者为值类型或指针类型的方法将被提升，可以被外部类型的值或者指针调用。
+
+根据调用者不同，方法分为两种表现形式:
+	instance.method(args...) ---> <type>.func(instance, args...)
+前者称为method-value，后者method-expression。
+两者都可像普通函数那样赋值和传参，区别在于method-value绑定实例，而method-expression则须显式传参。
+
+type User struct {
+	Name string
+	Age  uint8
+}
+func (u *User) Desc() {
+	println("My name is", u.Name, ", I'm", u.Age, "years old.")
+}
+func main() {
+	u := &User{
+		Name: "Tom",
+		Age:  9,
+	}
+	u.Desc()
+	v := u.Desc
+	v() //隐匿传递receiver
+	e := (*User).Desc
+	e(u) //显式传递receiver
+}

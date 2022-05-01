@@ -1,0 +1,77 @@
+Golang更明确的数字类型命名，支持Unicode，支持常用数据结构。
+
+数值类型支持八进制、十六进制，以及科学记数法。标准库math定义了各数字类型取值范围。
+var a, b, c, d = 017, 0x1F, 1e3, math.MaxInt8 // 15 31 1000 127
+
+int、uint和uintptr类型在32位的系统上一般是32位，而在64位系统上是64位。
+当需要使用一个整数类型时，应该首选int，仅当有特别的理由才使用定长整数类型或者无符号整数类型。
+
+整型按长度分为：int8、int16、int32、int64
+对应无符号整型：uint8、uint16、uint32、uint64
+其中，byte是unit8的别名，rune是int32的别名。
+int16对应C语言中的short型，int64对应C语言中的long型。
+
+⚠未显式指定类型的整数常量(untypeint)，其有效范围是系统int的范围，超出该范围直接使用会报溢出错误。
+	fmt.Println(math.MaxUint64) // Error
+	fmt.Println(uint64(math.MaxUint64)) // OK
+
+Go语言支持两种浮点型数：float32和float64。
+float32的最大范围约为3.4e38，可以使用常量math.MaxFloat32。
+float64的最大范围约为1.8e308，可以使用常量math.MaxFloat64。
+
+复数有实部和虚部，complex64的实部和虚部为32位，complex128的实部和虚部为64位。
+
+布尔型数据只有true（真）和false（假）两个值。
+
+字符串是不可变值类型，内部用指针指向UTF-8字节数组。
+可以用索引号访问某字节，如s[i]。不能用序号获取字节元素指针，&s[i]非法。
+支持用两个索引号([])返回子串。串依然指向原字节数组，仅修改了指针和度属性。
+	s := "Hello, World!"
+	s1 := s[:5]  // Hello
+	s2 := s[7:]  // World!
+	s3 := s[1:5] // ello
+
+连接跨行字符串时，"+"必须在上一行末尾，否则导致编译错误。
+	s := "Hello, " +
+		"World!"
+	println(s) // Hello, World!
+
+双引号字符串中的转义：
+	\r 	回车符（返回行首）
+	\n 	换行符（直接跳到下一行的同列位置）
+	\t 	制表符
+	\" 	双引号
+	\\ 	反斜杠
+使用``定义不做转义处理的原始字符串，支持跨行。
+
+单引号字符常量表示Unicode Code Point，支持\uFFFF、\U7FFFFFFF、\xFF格式。
+	var r1, r2 = '\u6211', '们'
+	var s1, s2 = "我", "\xe4\xbb\xac"
+	println(string(r1) == s1, string(r2) == s2) // true true
+	var s = "abc"
+	println(s[0] == '\x61', s[1] == 'b', s[2] == 0x63) // true true true
+
+byte型代表一个ASCII码字符。rune类型代表一个UTF-8字符。
+字符串的长度是byte字节的长度。一个rune字符由一个或多个byte组成。
+
+要修改字符串，可先将其转换成[]rune或[]byte，完成后再转换为string。
+无论哪种转换，都会重新分配内存，并复制字节数组。
+	s := "abcd"
+	bs := []byte(s)
+	bs[1] = 'B'
+	println(string(bs)) // aBcd
+	u := "电脑"
+	us := []rune(u)
+	us[1] = '话'
+	println(string(us)) // 电话
+
+Go语言中只有强制类型转换，没有隐式类型转换，只能在两个类型之间支持相互转换的时候使用。
+强制类型转换的基本语法如下：
+    T(表达式)
+其中，T表示要转换的类型。表达式包括变量、复杂算子和函数返回值等
+
+单个byte(uint8)和单个ASCII码字符可以互转，单个rune(int32)和单个任意字符可以互转。
+对整数类型进行string强转会得到其值为编码的字符串而非数值的字符串表示。
+[]byte([]uint8)和字符串可以互转，[]rune([]int32)和字符串也可以互转。
+各个整型和浮点型之间可以互转（注意：如果转换后长度超过了新类型的值限制，会得到意外的数值）。
+strconv包定义了字符串和常用类型之间的转换方法。

@@ -1,0 +1,75 @@
+泛型就是编写模板适应所有类型，只有在具体使用时才定义具体变量类型。
+
+泛型是一把双刃剑，既可能给开发者带来了便利，但是同样会带来编译和效率的问题。
+泛型是需要系统去推倒和计算变量的类型的，这在无形中会增加编译的时间和降低运行效率。
+泛型使用场景：当分别为不同类型写逻辑完全相同的代码时，那么使用泛型是最合适的选择。
+
+函数定义时的参数是形参 (parameter)，在实际使用函数传入的参数为实参 (argument)
+在声明使用泛型的函数时，需要特定语法声明该函数支持的类型。与此对应的，调用该函数时也需要指明实参的类型。
+
+泛型类型的声明： [T1 constraint1|constraint2, T2 constraint3]
+T1, T2…是泛型名, 可以随便取
+constraint的意思是约束，作用是限定范围，使用|可以分隔多个constraint，T满足其中之一即可。
+约束条件前面加~表示包含其衍生类型。eg:[T ~int|~int64]包含了int和int64及其衍生类型如time.Duration和time.Weekday
+
+example1:
+	func PrintS[T []byte | []rune | string](s T) {
+		fmt.Println(string(s))
+	}
+调用：
+	PrintS([]byte{65, 66, 67})
+	PrintS([]rune{65, 66, 67})
+	PrintS("ABC")
+
+可以声明一个类型限制为接口类型。这样的类型限制可以允许任何实现了该接口的类型作为泛型函数的类型实参。
+type Strings interface {
+	[]byte | []rune | string
+}
+example2:
+	func PrintS[T Strings](s T) {
+		fmt.Println(string(s))
+	}
+
+官方包的内置类型any(空接口interface{}的别名)可表示任意类型，
+comparable表示所有内置的可比较类型：int、uint、float、bool、struct、指针等类型集合。
+
+泛型也可以用于slice、map、channel等类型：
+	type Integer interface {
+		~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+	}
+	type Float interface {
+		~float32 | ~float64
+	}
+	type Numbers[T Integer | Float] []T
+	type MyMap[K comparable, V any] map[K]V
+	type AnyChannel[T []byte | []rune | string] chan T
+
+example3：泛型struct
+type Resp[T any] struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Result  T      `json:"result"`
+}
+type GeoCoderResult struct {
+	Title    string `json:"title"`
+	Location struct {
+		Lng float64 `json:"lng"`
+		Lat float64 `json:"lat"`
+	} `json:"location"`
+}
+使用[T]类似typescript的<T>：
+func GeoCoder(ctx context.Context, address string) (*Resp[GeoCoderResult], error) {
+	var resp Resp[GeoCoderResult]
+	// err := ...
+	return &resp, err
+}
+
+v1.21标准库cmp定义了泛型Ordered表示可比较类型(整数、浮点数、字符串及其衍生类型)。
+type Ordered interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+		~float32 | ~float64 |
+		~string
+}
+v1.21标准库新增"slices"和"maps"包，提供了slice和map泛型常用方法。

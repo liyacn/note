@@ -1,0 +1,48 @@
+package request
+
+import (
+	"fmt"
+	"net/url"
+)
+
+func UrlValues() {
+	val := url.Values{}
+	val.Set("name", "Tom")
+	val.Set("age", "18")
+	fmt.Println(val.Encode()) // age=18&name=Tom (自动按key升序)
+	val.Add("color", "red")
+	val.Add("color", "green")
+	fmt.Println(val)              //map[age:[18] color:[red green] name:[Tom]]
+	fmt.Println(val.Get("color")) //red (Get方法取到第一个)
+	val.Del("age")
+	fmt.Println(val.Encode()) //color=red&color=green&name=Tom (color后者会覆盖前者)
+}
+
+func Parse() {
+	u, err := url.Parse("http://example.com:8008/home?lang=go&env=browser#top")
+	if err != nil {
+		fmt.Fatal(err)
+	}
+	fmt.Println(u.Scheme, u.Host)       // http example.com:8008
+	fmt.Println(u.Hostname(), u.Port()) // example.com 8008
+	fmt.Println(u.Path)                 // /home
+	fmt.Println(u.Fragment)             // top
+	fmt.Println(u.RequestURI())         // /home?lang=go&env=browser
+	fmt.Println(u.RawQuery)             // lang=go&env=browser
+	fmt.Println(u.Query())              // map[env:[browser] lang:[go]] 返回url.ParseQuery(u.RawQuery)的值忽略error
+	fmt.Println(u.String())             // http://example.com:8008/home?lang=go&env=browser#top
+}
+
+func Escape() {
+	//escapes the string so it can be safely placed inside a URL query.
+	encode := url.QueryEscape("/<a>{ }")
+	fmt.Println(encode) //%2F%3Ca%3E%7B+%7D
+	decode, err := url.QueryUnescape(encode)
+	fmt.Println(decode, err)
+
+	//escapes the string so it can be safely placed inside a URL path segment.
+	e := url.PathEscape("/a/b")
+	fmt.Println(e) //%2Fa%2Fb
+	d, err := url.PathUnescape(e)
+	fmt.Println(d, err)
+}

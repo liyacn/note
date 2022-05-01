@@ -1,0 +1,62 @@
+数值类型的转换直接使用 类型(原值) 表达式即可。如：
+	f := 1.23 //float64
+	i := int(f) //int
+	u := uint8(i) //uint8
+
+字符(串)和字节(数组)的转换：
+
+	a := []byte{65, 66, 67}
+	b := string(a)
+	fmt.Println(b) //ABC
+
+	c := "abc"
+	d := []byte(c)
+	fmt.Println(d) //[97 98 99]
+
+	str := "你好World"
+	rs := []rune(str)
+	fmt.Println(rs)         //[20320 22909 87 111 114 108 100]
+	fmt.Println(string(rs)) //你好World
+
+	fmt.Println(string(90)) //Z
+	fmt.Println('z')        //122
+	fmt.Println('好')        //22909
+
+"strconv"包实现了基本数据类型和其字符串表示的相互转换。
+
+func ParseBool(str string) (value bool, err error)
+返回字符串表示的bool值。它接受1、0、t、f、T、F、true、false、True、False、TRUE、FALSE；否则返回错误。
+
+func ParseInt(s string, base int, bitSize int) (i int64, err error)
+返回字符串表示的整数值，接受正负号。
+base指定进制（2到36），如果base为0，则会从字符串前置判断，"0x"是16进制，"0"是8进制，否则是10进制；
+bitSize指定结果必须能无溢出赋值的整数类型，0、8、16、32、64 分别代表 int、int8、int16、int32、int64
+
+func ParseUint(s string, base int, bitSize int) (n uint64, err error)
+类似ParseInt但不接受正负号，用于无符号整型。
+
+func ParseFloat(s string, bitSize int) (f float64, err error)
+解析一个表示浮点数的字符串并返回其值。
+如果s合乎语法规则，函数会返回最为接近s表示值的一个浮点数（使用IEEE754规范舍入）。
+bitSize指定了期望的接收类型，32是float32（返回值可以不改变精确值的赋值给float32），64是float64
+
+func FormatBool(b bool) string
+根据b的值返回"true"或"false"。
+
+func FormatInt(i int64, base int) string
+返回i的base进制的字符串表示。base必须在2到36之间，结果中会使用小写字母'a'到'z'表示大于10的数字。
+
+func FormatUint(i uint64, base int) string
+FormatInt的无符号整数版本。
+
+func FormatFloat(f float64, fmt byte, prec, bitSize int) string
+将浮点数表示为字符串并返回。
+bitSize表示f的来源类型（32：float32、64：float64），会据此进行舍入。
+fmt表示格式：'f'（-ddd.dddd）、'b'（-ddddp±ddd，指数为二进制）、'e'（-d.dddde±dd，十进制指数）、'E'（-d.ddddE±dd，十进制指数）、'g'（指数很大时用'e'格式，否则'f'格式）、'G'（指数很大时用'E'格式，否则'f'格式）。
+prec控制精度（排除指数部分）：对'f'、'e'、'E'，它表示小数点后的数字个数；对'g'、'G'，它控制总的数字个数。如果prec为-1，则代表使用最少数量的、但又必需的数字来表示f。
+
+func Atoi(s string) (i int, err error)
+Atoi是ParseInt(s, 10, 0)的简写。
+
+func Itoa(i int) string
+Itoa是FormatInt(i, 10) 的简写。

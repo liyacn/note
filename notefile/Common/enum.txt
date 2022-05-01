@@ -1,0 +1,26 @@
+========== ========== 运行环境 ========== ==========
+
+dev/local: Development 本地开发
+test: Testing 测试
+sit：System Integrate Test 系统整合测试（内测）
+fat: Feature Acceptance Test 功能验收测试
+pet: Peformance Evaluation Test 性能评估测试（压测）
+qas: Quality Assurance System 质量保证系统
+uat: Use Acceptance Test 用户验收测试
+stg: staging 开发和上线的中间阶段(测试或预发布)
+sim: Simulation 仿真
+pre: Pre-Production 预生产（灰度，小范围上线）
+prod: Production 生产（正式上线）
+
+常规开发通常需要准备四套环境：开发(dev)、测试(test)、预发(stg)、生产(prod)
+gin框架内置三种模式变量可对应三个环境：debug(dev)、test(test)、release(prod)
+微信小程序前端提供三种版本可对应三个环境：开发(dev)、体验(uat)、正式(prod)
+vite工具环境变量内置DEV和PROD两种，多环境可通过自定义变量区分
+
+========== ========== 日志等级 ========== ==========
+
+从低到高常见的有：
+trace/debug < info < warn < error < fatal/critical
+
+绝大多数应用程序包含三个等级： info < warn < error
+

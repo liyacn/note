@@ -1,0 +1,50 @@
+可将类型分为命名和未命名两大类。
+命名类型包括bool、int、string等。
+而array、slice、map等和具体元素类型、长度等有关，属于未命名类型。
+具有相同声明的未命名类型被视为同一类型：
+	具有相同基类型的指针。
+	具有相同元素类型和长度的array。
+	具有相同元素类型的slice。
+	具有相同键值类型的map。
+	具有相同元素类型和传送方向的channel。
+	具有相同字段序列(字段名、类型、标签、顺序)的匿名struct。 
+	签名相同(参数和返回值，不包括参数名称)的function。
+	方法集相同(方法名、方法签名相同，和次序无关)的interface。
+
+值类型：变量直接存储值，内存通常在栈中分配。
+	例如int、float、bool、string、数组、struct是值类型。
+引用类型：变量存储的是一个地址，这个地址存储最终的值，内存通常在堆上分配。
+	例如指针、slice、map、chan等是引用类型。
+
+可排序的数据类型：整型、浮点型、字符串
+其他可比较类型：Boolean,Complex,Pointer,Channel,Interface,Array
+不可比较类型：Slice,Map,Function
+
+同一个struct的两个实例：
+	如果结构体内所有成员变量都是可以比较的，那么结构体就可以进行比较；
+	如果结构体中存在不可比较的成员变量，那么结构体就不能进行比较。可使用反射的DeepEqual方法进行比较。
+
+两个不同struct的实例：
+	如果想要比较两个不同的struct的实例的话，需要先进行结构类型的转换，转换成同一个结构类型才可以进行比较。
+	结构体之间进行转换需要他们具备完全相同的成员(字段名、字段类型、字段个数)。
+
+make用来创建map、slice、channel，new用来创建值类型和用户定义的类型。
+new(T)分配类型T的零值并返回其地址，也就是指向类型T的指针。它也可以被用于基本类型：v := new(int)。
+make(T)返回类型T的初始化之后的值，因此它比new进行更多的工作。new()是一个函数，不要忘记它的括号。
+
+不同类型的size
+struct{}	0
+bool	1
+int8/uint8	1
+int16/uint16	2
+int32/uint32	4
+int64/uint64	8
+int/uint/uintptr	8 (64位系统下)
+float32	4
+float64	8
+complex64	8
+complex128	16
+string	16
+[n]T	n*T类型的size
+[]T	24
+map[T1]T2	8

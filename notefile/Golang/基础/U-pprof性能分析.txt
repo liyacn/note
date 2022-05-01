@@ -1,0 +1,32 @@
+"runtime/pprof"包以可视化工具所期望的格式写入运行时分析数据。
+"net/http/pprof"包类似，但通过其http提供服务而不限于写入文件。
+
+go的基准测试内置了pprof性能分析，可以通过以下参数分别输出cpu和内存的性能分析文件
+-cpuprofile cpu.prof -memprofile mem.prof
+
+再通过以下命令可视化查看性能分析文件：
+go tool pprof cpu.prof
+go tool pprof mem.prof
+
+"net/http/pprof"包使用时需导入，可忽略使用
+    import _ "net/http/pprof"
+再开启一个协程提供http服务
+    go func() {
+        log.Println(http.ListenAndServe("localhost:6060", nil))
+    }()
+浏览器中打开 http://localhost:6060/debug/pprof/ 可查看所有可用的分析数据。
+
+可通过query在GET请求中传递的参数：
+debug=N (all profiles): response format: N = 0: binary (default), N > 0: plaintext
+gc=N (heap profile): N > 0: run a garbage collection cycle before profiling
+seconds=N (allocs, block, goroutine, heap, mutex, threadcreate profiles): return a delta profile
+seconds=N (cpu (profile), trace profiles): profile for the given duration
+示例：
+go tool pprof http://localhost:6060/debug/pprof/heap
+go tool pprof 'http://localhost:6060/debug/pprof/profile?seconds=30'
+go tool pprof http://localhost:6060/debug/pprof/block
+go tool pprof http://localhost:6060/debug/pprof/mutex
+curl -o trace.out 'http://localhost:6060/debug/pprof/trace?seconds=5'
+go tool trace trace.out
+
+可视化网页中查看性能分析，可在 go tool pprof 命令增加 -http [host]:[port] 选项。需安装Graphviz工具。
