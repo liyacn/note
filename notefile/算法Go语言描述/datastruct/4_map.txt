@@ -1,0 +1,57 @@
+Map数据结构的底层实现通常有两种：
+HashMap基于哈希表实现，采用链表解决哈希冲突，无法支持排序，增删查改的性能为O(1)。
+TreeMap基于红黑树实现，有序的同时保证数据操作的性能为O(logn) 。
+
+Golang内置map结构，具体实现可参考"runtime/map.go"源码。
+
+一个map就是一个哈希表，数据被排列到桶数组中，每个桶最多包含8个键值对。
+当向map中存储一个kv时，通过k的hash值与buckets长度取余，定位到key在哪一个bucket中。
+hash值的高8位存储在bucket的tophash[i]中，用来快速判断key是否存在。
+当一个bucket满时，通过overflow指针链接到下一个bucket。
+
+通常在哈希表扩容时，先分配足够多的新桶，然后用一个字段记录旧桶的位置，一个字段记录旧桶迁移的进度。
+在哈希表每次读写操作时，如果检测到当前处于扩容阶段，就完成一部分键值对迁移任务。
+直接所有旧桶迁移完成，旧桶不再使用，才算真正完成一次哈希表的扩容。
+像这样把键值对迁移的时间分摊到多次哈希表操作中的方式，就是渐进式扩容，可以避免一次性扩容带来的性能瞬时抖动。
+
+存储的键值对数目与桶数目的比值称为负载因子。负载因子太大会导致很多溢出桶，太小又会浪费很多空间。
+当负载因子超过6.5时就会触发翻倍扩容。
+旧桶的键值对会渐进式分流到两个新桶中。直到旧桶中的键值对全部搬迁完毕后，删除oldbuckets。
+
+如果没有超过负载因子限制，但是使用溢出桶过多，就会触发等量扩容，创建和旧桶数目一样多的新桶，然后把原来的键值对迁移到新桶中。
+B <= 15，noverflow >= 2^B
+B > 15， noverflow >= 2^15
+同样数目的键值对，迁移到新桶中会把松散的键值对重新排列一次，使其排列的更加紧凑，进而保证更快的存取。
+
+当表增长时，迭代器仍然在旧表中迭代，并且必须检查新表。如果旧桶已搬空，则在新表中迭代。
+
+type hmap struct {
+	count      int            // 存储的键值对数目，len函数返回的就是该字段值。
+	flags      uint8          // 状态标志（是否处于正在写入的状态等）
+	B          uint8          // buckets的对数log2(buckets的数目为2^B)
+	noverflow  uint16         // 溢出桶的数量
+	hash0      uint32         // 生成hash的随机数种子
+	buckets    unsafe.Pointer // buckets数组指针，数组大小为2^B，如果元素个数为0，它为nil。
+	oldbuckets unsafe.Pointer // 扩容阶段用于记录旧桶用到的那些溢出桶的地址，非扩容状态下为nil。
+	nevacuate  uintptr        // 记录渐进式扩容阶段下一个要迁移的旧桶编号，小于nevacuate的数据都已经转移到了新桶中。
+	extra      *mapextra      // 指向mapextra结构体里边记录的都是溢出桶相关的信息
+}
+
+type mapextra struct {
+	overflow     *[]*bmap // 记录所有使用的溢出桶地址
+	oldoverflow  *[]*bmap // 扩容阶段旧桶使用的溢出桶地址
+	nextOverflow *bmap    // 指向下一个空闲溢出桶
+}
+
+type bmap struct {
+	tophash [8]uint8 // len为8的数组，用来快速定位key是否在这个bmap中
+}
+
+在编译期动态地创建一个新的结构：
+truct {
+    topbits  [8]uint8
+    keys     [8]keytype
+    values   [8]valuetype
+    pad      uintptr
+    overflow uintptr
+}

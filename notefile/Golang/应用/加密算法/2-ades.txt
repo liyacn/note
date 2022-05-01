@@ -1,0 +1,242 @@
+"crypto/cipher"包提供了不同工作模式的核心算法，加解密得到密文或明文的字节数组。
+密钥、明文、密文的字节数组通常使用Base64Std编码，也可以使用其他字节编码方式。
+
+两种明文块填充方式的实现：
+func Padding(src []byte, blockSize int) []byte {
+	length := len(src)
+	pad := blockSize - length%blockSize
+	padText := make([]byte, pad-1) // * AnsiX923补零填充
+	//rand.Read(padText) // * Iso10126随机填充
+	padText = append(padText, byte(pad))
+	res := make([]byte, length, length+pad)
+	copy(res, src)
+	return append(res, padText...)
+}
+
+五种工作模式比较：
+    密文长度：ECB=CBC>CFB=OFB=CTR
+    内存占用：ECB<CFB<CBC<OFB=CTR
+	加密耗时：ECB<CFB<CBC<CTR<OFB
+建议：性能要求更高的场景(eg:日志实时加密)选用ECB/CFB模式，安全性要求更高的场景(eg:落库数据)选用CTR模式。
+
+DES,3DES,AES有相似的初始化方法，相同的5种工作模式，可统一封装成通用方法。
+DES密钥8字节，向量8字节。3DES密钥24字节，向量8字节。AES密钥16/24/32字节，向量16字节。
+密文的编码方式通常采用标准的base64，但在某些场景也可以使用其他编码方式（hex,base64url等）。
+
+========== ========== ========== ========== ==========
+
+package ades
+
+import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/des"
+	"encoding/base64"
+)
+
+type Cipher interface {
+	Encrypt(src []byte) string
+	Decrypt(s string) []byte
+}
+
+type (
+	param struct {
+		block cipher.Block
+		iv    []byte
+	}
+	ecb param
+	cbc param
+	cfb param
+	ofb param
+	ctr param
+)
+
+func NewDesECB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewCipher, key, iv)
+	return ecb{block, ivb}, err
+}
+func NewDesCBC(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewCipher, key, iv)
+	return cbc{block, ivb}, err
+}
+func NewDesCFB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewCipher, key, iv)
+	return cfb{block, ivb}, err
+}
+func NewDesOFB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewCipher, key, iv)
+	return ofb{block, ivb}, err
+}
+func NewDesCTR(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewCipher, key, iv)
+	return ctr{block, ivb}, err
+}
+
+func NewTripleDESCipherECB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewTripleDESCipher, key, iv)
+	return ecb{block, ivb}, err
+}
+func NewTripleDESCipherCBC(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewTripleDESCipher, key, iv)
+	return cbc{block, ivb}, err
+}
+func NewTripleDESCipherCFB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewTripleDESCipher, key, iv)
+	return cfb{block, ivb}, err
+}
+func NewTripleDESCipherOFB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewTripleDESCipher, key, iv)
+	return ofb{block, ivb}, err
+}
+func NewTripleDESCipherCTR(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(des.NewTripleDESCipher, key, iv)
+	return ctr{block, ivb}, err
+}
+
+func NewAesECB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(aes.NewCipher, key, iv)
+	return ecb{block, ivb}, err
+}
+func NewAesCBC(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(aes.NewCipher, key, iv)
+	return cbc{block, ivb}, err
+}
+func NewAesCFB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(aes.NewCipher, key, iv)
+	return cfb{block, ivb}, err
+}
+func NewAesOFB(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(aes.NewCipher, key, iv)
+	return ofb{block, ivb}, err
+}
+func NewAesCTR(key, iv []byte) (Cipher, error) {
+	block, ivb, err := newParam(aes.NewCipher, key, iv)
+	return ctr{block, ivb}, err
+}
+
+func newParam(f func([]byte) (cipher.Block, error), key, iv []byte) (cipher.Block, []byte, error) {
+	block, err := f(key)
+	if err != nil {
+		return nil, nil, err
+	}
+	ivb := make([]byte, block.BlockSize())
+	copy(ivb, iv)
+	return block, ivb, nil
+}
+
+func pkcs7Padding(src []byte, blockSize int) []byte {
+	length := len(src)
+	pad := blockSize - length%blockSize
+	padText := bytes.Repeat([]byte{byte(pad)}, pad)
+	res := make([]byte, length, length+pad)
+	copy(res, src) //复制一份防止当src后cap足够的时候append修改其后的内容
+	return append(res, padText...)
+}
+func trimPadding(dst []byte) []byte {
+	length := len(dst)
+	if length == 0 {
+		return dst
+	}
+	pad := int(dst[length-1])
+	if length < pad {
+		return nil
+	}
+	return dst[:length-pad]
+}
+
+func (c ecb) Encrypt(src []byte) string {
+	bs := c.block.BlockSize()
+	src = pkcs7Padding(src, bs)
+	length := len(src)
+	dst := make([]byte, length)
+	for i := 0; i < length; i += bs {
+		c.block.Encrypt(dst[i:i+bs], src[i:i+bs])
+	}
+	return base64.StdEncoding.EncodeToString(dst)
+}
+func (c ecb) Decrypt(s string) []byte {
+	src, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil
+	}
+	bs := c.block.BlockSize()
+	length := len(src)
+	if length%bs != 0 {
+		return nil
+	}
+	dst := make([]byte, length)
+	for i := 0; i < length; i += bs {
+		c.block.Decrypt(dst[i:i+bs], src[i:i+bs])
+	}
+	return trimPadding(dst)
+}
+
+func (c cbc) Encrypt(src []byte) string {
+	src = pkcs7Padding(src, c.block.BlockSize())
+	dst := make([]byte, len(src))
+	bm := cipher.NewCBCEncrypter(c.block, c.iv)
+	bm.CryptBlocks(dst, src)
+	return base64.StdEncoding.EncodeToString(dst)
+}
+func (c cbc) Decrypt(s string) []byte {
+	src, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil
+	}
+	dst := make([]byte, len(src))
+	bm := cipher.NewCBCDecrypter(c.block, c.iv)
+	bm.CryptBlocks(dst, src)
+	return trimPadding(dst)
+}
+
+func (c cfb) Encrypt(src []byte) string {
+	dst := make([]byte, len(src))
+	stream := cipher.NewCFBEncrypter(c.block, c.iv)
+	stream.XORKeyStream(dst, src)
+	return base64.StdEncoding.EncodeToString(dst)
+}
+func (c cfb) Decrypt(s string) []byte {
+	src, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil
+	}
+	dst := make([]byte, len(src))
+	stream := cipher.NewCFBDecrypter(c.block, c.iv)
+	stream.XORKeyStream(dst, src)
+	return dst
+}
+
+func (c ofb) Encrypt(src []byte) string {
+	dst := make([]byte, len(src))
+	stream := cipher.NewOFB(c.block, c.iv)
+	stream.XORKeyStream(dst, src)
+	return base64.StdEncoding.EncodeToString(dst)
+}
+func (c ofb) Decrypt(s string) []byte {
+	src, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil
+	}
+	dst := make([]byte, len(src))
+	stream := cipher.NewOFB(c.block, c.iv)
+	stream.XORKeyStream(dst, src)
+	return dst
+}
+
+func (c ctr) Encrypt(src []byte) string {
+	dst := make([]byte, len(src))
+	stream := cipher.NewCTR(c.block, c.iv)
+	stream.XORKeyStream(dst, src)
+	return base64.StdEncoding.EncodeToString(dst)
+}
+func (c ctr) Decrypt(s string) []byte {
+	src, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil
+	}
+	dst := make([]byte, len(src))
+	stream := cipher.NewCTR(c.block, c.iv)
+	stream.XORKeyStream(dst, src)
+	return dst
+}

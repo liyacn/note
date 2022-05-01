@@ -1,0 +1,77 @@
+"sync/atomic"包提供了底层的原子级内存操作，对于同步算法的实现很有用。
+这些函数必须谨慎地保证正确使用。除了某些特殊的底层应用，使用通道或者sync包的函数/类型实现同步更好。
+
+Value提供一致类型值的原子加载和存储。一经使用（调用Store方法），不能被复制。
+
+func (v *Value) Store(x any)
+设置x的值到Value，每次调用必须使用相同具体类型的值。x为nil会panic。
+
+func (v *Value) Load() (x any)
+返回最后一次Store设置的值。如未调用过Store返回nil。
+
+func (v *Value) Swap(new any) (old any)
+保存new到Value并返回原来存储的值。每次调用必须使用相同具体类型的值。x为nil会panic。
+
+func (v *Value) CompareAndSwap(old, new any) (swapped bool)
+比较old和存储的Value，如果相等则设置new到Value并返回true，否则返回false。
+每次调用必须使用相同具体类型的值。new为nil会panic。
+
+SwapT系列函数实现的交换操作，在原子性上等价于：
+	old = *addr
+	*addr = new
+	return old
+
+CompareAndSwapT系列函数实现的比较-交换操作，在原子性上等价于：
+	if *addr == old {
+		*addr = new
+		return true
+	}
+	return false
+
+AddT 系列函数实现加法操作，在原子性上等价于：
+	*addr += delta
+	return *addr
+
+LoadT系列函数实现的加载操作，在原子性上等价于：
+	return *addr
+StoreT系列函数实现的保持操作，在原子性上等价于：
+	*addr = val
+
+// SwapT atomically stores new into *addr and returns the previous *addr value.
+func SwapInt32(addr *int32, new int32) (old int32)
+func SwapInt64(addr *int64, new int64) (old int64)
+func SwapUint32(addr *uint32, new uint32) (old uint32)
+func SwapUint64(addr *uint64, new uint64) (old uint64)
+func SwapUintptr(addr *uintptr, new uintptr) (old uintptr)
+func SwapPointer(addr *unsafe.Pointer, new unsafe.Pointer) (old unsafe.Pointer)
+
+// CompareAndSwapT executes the compare-and-swap operation for a value.
+func CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool)
+func CompareAndSwapInt64(addr *int64, old, new int64) (swapped bool)
+func CompareAndSwapUint32(addr *uint32, old, new uint32) (swapped bool)
+func CompareAndSwapUint64(addr *uint64, old, new uint64) (swapped bool)
+func CompareAndSwapUintptr(addr *uintptr, old, new uintptr) (swapped bool)
+func CompareAndSwapPointer(addr *unsafe.Pointer, old, new unsafe.Pointer) (swapped bool)
+
+// AddT atomically adds delta to *addr and returns the new value.
+func AddInt32(addr *int32, delta int32) (new int32)
+func AddUint32(addr *uint32, delta uint32) (new uint32) //如要减n，调用：AddUint32(&x, ^uint32(n-1))
+func AddInt64(addr *int64, delta int64) (new int64)
+func AddUint64(addr *uint64, delta uint64) (new uint64) //如要减n，调用：AddUint64(&x, ^uint64(n-1))
+func AddUintptr(addr *uintptr, delta uintptr) (new uintptr)
+
+// LoadT atomically loads *addr.
+func LoadInt32(addr *int32) (val int32)
+func LoadInt64(addr *int64) (val int64)
+func LoadUint32(addr *uint32) (val uint32)
+func LoadUint64(addr *uint64) (val uint64)
+func LoadUintptr(addr *uintptr) (val uintptr)
+func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
+
+// StoreT atomically stores val into *addr.
+func StoreInt32(addr *int32, val int32)
+func StoreInt64(addr *int64, val int64)
+func StoreUint32(addr *uint32, val uint32)
+func StoreUint64(addr *uint64, val uint64)
+func StoreUintptr(addr *uintptr, val uintptr)
+func StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)
