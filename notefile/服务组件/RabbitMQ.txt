@@ -1,0 +1,130 @@
+安装指引： https://www.rabbitmq.com/docs/download
+
+rabbitmq-server的默认端口：
+    amqp       5672/5671(tls)
+    stream     5552/5551(tls)
+    http       15672/15671(tls)
+    stomp      61613/64614(tls)
+    mqtt       1883/8883(tls)
+    stomp-ws   15674
+    mqtt-ws    15675
+    Prometheus 15692/15691(tls)
+
+启用管理界面：
+rabbitmq-plugins enable rabbitmq_management
+浏览器访问： http://localhost:15672
+默认用户名/密码均为"guest"
+
+消息模型：
+    简单队列（Simple Queue）：一个生产者对应一个消费者。
+    工作队列（Work Queues）：在多个消费者之间分配任务（竞争消息者模式）。
+    发布/订阅（Publish/Subscribe）：同时向多个消费者发送消息。
+    路由（Routing）：选择性接收消息。
+    主题（Topics）：基于模式(主题)接收消息。
+    远程过程调用（RPC）：请求/应答模式。
+    发布者确认（Publisher Confirms）：与发布者确认的可靠的发布。
+
+交换机（exchange）类型：
+    直连（direct）：将绑定的路由键完全匹配的方式路由到指定的队列上。
+    广播（fanout）：将一条消息广播到绑定到该交换机的所有队列上。
+    主题（topic）：和direct很类似，routingkey通过符号“.”进行分割作为路由的匹配元素，“*”用来匹配一个单词，“#”用来匹配任意个单词。。
+    头（headers）：不依赖路由键的匹配规则，而是根据发送的消息内容的headers属性进行匹配。
+        匹配规则x-match为all表示要所有的键值对都匹配才接受消息，any表示只需任意键值对匹配就接受消息。
+还有amq.*交换机和默认交换机（空字符串标识的直连类型）。默认交换机不允许进行绑定和取消绑定操作。
+
+简单队列可以视为工作队列仅一个消费者时的特殊情形。消息投递到默认交换机并指定routingkey，队列=routingkey。
+发布订阅模式消息投递到type=fanout的交换机并忽略routingkey，队列和交换机绑定时忽略routingkey。
+路由模式消息投递到type=direct的交换机并指定routingkey，队列=routingkey，或任意队列和交换机绑定时指定routingkey。
+主题模式与路由模式类似，交换机type=topic，routingkey由精确匹配改为模式匹配。
+
+RabbitMQ消息模型的核心思想是生产者永远不会直接向队列发送任何消息。
+生产者只能向交换机发送消息。交换机一边接收来自生产者的消息，另一边将消息推送到队列中。
+
+交换机和队列命名规则：不超过255字符，字母、数字、下划线、短横线、句点。交换机和队列名称不能以amq.开头。
+声明一个交换机或队列是幂等的，如果尚不存在则会创建。如果已存在并且其属性与声明中的属性相同，则声明无效。如已存在且属性与声明中的属性不同，将引发信道级异常。
+交换机和队列需在使用前创建，广播模式需要提前绑定队列到交换机。
+向一个不存在的交换机或者未绑定队列的交换机投递消息，将被直接丢弃。
+客户端无法从一个不存在的队列消费消息，即使在客户端启动后创建队列。
+
+死信交换机是普通的交换机，可以是任何被正常声明的常用类型。
+要为队列设置死信交换机，在声明队列时指定可选参数x-dead-letter-exchange，该值必须是同一虚拟主机中的交换机名称。
+还可以指定当消息成为死信时要使用的路由键x-dead-letter-routing-key。如果未设置路由键，则使用消息自己的路由键。
+死信消息的Headers中会添加一些参数，说明产生死信的来源、次数、时间等信息。例如：
+	"x-death": [{
+        "count": 1,
+        "exchange": "",
+        "queue": "qname",
+        "reason": "rejected",
+        "routing-keys": ["qname"],
+        "time": "2006-01-02T15:04:05Z07:00"
+    }],
+    "x-first-death-exchange": "",
+    "x-first-death-queue": "qname",
+    "x-first-death-reason": "rejected",
+    "x-last-death-exchange": "",
+    "x-last-death-queue": "qname",
+    "x-last-death-reason": "rejected"
+死信产生的reason有以下四种：
+    rejected: 消息被nack/reject且requeue参数为false
+    expired: 消息设置的TTL过期
+    maxlen: 超过了允许的最大队列长度
+    delivery_limit: 消息requeue超过限制次数
+利用死信队列配合TTL可以实现延迟消费：TTL队列绑定死信交换机且不分配消费者，消费者等待死信队列中的消息消费。
+设置消息TTL过期时间，只需在投递时args参数中添加x-message-ttl，值是以毫秒为单位的非负整数。
+
+使用延时插件rabbitmq_delayed_message_exchange能更好地实现延迟消费。
+https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases
+下载.ez格式文件，复制到rabbitmq插件目录（取决于rabbitmq安装路径）。
+可使用命令查看插件目录： rabbitmq-plugins directories -s
+Linux：/usr/lib/rabbitmq/lib/rabbitmq_server-${version}/plugins
+Homebrew：/opt/homebrew/Cellar/rabbitmq/${version}/plugins
+Windows：C:\Program Files\RabbitMQ\rabbitmq_server-${version}\plugins
+启用插件： rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+管理界面可以看到Exchanges的Type下拉选项增加了一项x-delayed-message
+声明一个交换机类型为x-delayed-message，并在args参数设置x-delayed-type值为四种内置交换机类型之一。
+投递消息到该交换机，增加headers参数x-delay的值为延迟的毫秒数。若headers中x-delay不存在，则会立即路由该消息。
+
+三种队列类型：
+classic：经典队列（默认类型）
+quorum：仲裁队列
+stream：流式队列
+quorum和stream队列声明时，durable参数必须设定为true，exclusive参数必须设置为false，args参数中需指定"x-queue-type"。
+
+quorum队列支持"x-delivery-limit"参数限定消息requeue次数，超过次数不再requeue（如配置有死信队列则会进入死信队列）。
+消息requeue后，会在Headers中添加参数："x-delivery-count":1
+
+rabbitmq提供的HTTP接口列表： http://localhost:15672/api/index.html
+
+获取列表：
+curl -i -u guest:guest http://localhost:15672/api/vhosts
+curl -i -u guest:guest http://localhost:15672/api/exchanges
+curl -i -u guest:guest http://localhost:15672/api/queues
+curl -i -u guest:guest http://localhost:15672/api/connections
+curl -i -u guest:guest http://localhost:15672/api/channels
+
+创建和删除vhost：
+curl -i -u guest:guest -XPUT http://localhost:15672/api/vhosts/{VHOST}
+curl -i -u guest:guest -XDELETE http://localhost:15672/api/vhosts/{VHOST}
+
+创建和删除exchange：
+curl -i -u guest:guest -XPUT http://localhost:15672/api/exchanges/{VHOST}/{EXCHANGE} \
+    -d'{"type":"direct","durable":true,"arguments":{}}'
+curl -i -u guest:guest -XDELETE http://localhost:15672/api/exchanges/{VHOST}/{EXCHANGE}
+url路径中，默认vhost(/)需转义成：%2F
+
+创建和删除queue：
+curl -i -u guest:guest -XPUT http://localhost:15672/api/queues/{VHOST}/{QUEUE} \
+    -d'{"durable":true,"arguments":{}}'
+curl -i -u guest:guest -XDELETE http://localhost:15672/api/queues/{VHOST}/{QUEUE}
+
+绑定和解绑exchange/queue：
+curl -i -u guest:guest -XPOST http://localhost:15672/api/bindings/{VHOST}/e/{EXCHANGE}/q/{QUEUE} \
+    -d'{"routing-key":"{ROUTINGKEY}","arguments":{}}
+curl -i -u guest:guest -XDELETE http://localhost:15672/api/bindings/{VHOST}/e/{EXCHANGE}/q/{QUEUE}/{ROUTINGKEY}
+
+AMQP（高级消息队列协议）：Advanced Message Queuing Protocol
+AMQP-0-9-1是一个应用层协议，使用TCP实现可靠的传输。连接使用身份验证，并且可以使用TLS进行保护。
+AMQP-0-9-1连接（Connection）与信道（Channel）进行多路复用，可以认为是“共享单个TCP连接的轻量级连接”。
+客户端执行的每个协议操作都发生在信道上。信道仅存在于连接的上下文中，而不是单独存在。当连接关闭时，其上的所有信道也会关闭。
+对于使用多个线程/进程进行处理的应用程序，通常为每个线程/进程打开一个新信道而不是在它们之间共享信道。
+为了使单个代理能够托管多个隔离的“环境”(用户组、交换机、队列等)，AMQP-0-9-1包含了虚拟主机(vhosts)的概念。

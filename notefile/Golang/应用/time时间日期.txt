@@ -1,0 +1,176 @@
+"time"包提供了测量和显示时间的功能。历法计算始终采用公历，没有闰秒。
+
+预定义Local和UTC两个时区变量分别代表当前时区和0时区。
+
+func Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location) Time
+返回一个特定时间和时区表示的时间点。如果loc为nil会panic。
+
+提取特定时间的值
+func (t Time) Date() (year int, month Month, day int)
+func (t Time) Year() int
+func (t Time) Month() Month // 可int转为1~12。
+func (m Month) String() string // 月份的英文名（"January"、"February"……）
+func (t Time) Day() int
+func (t Time) Weekday() Weekday // 可int转为0~6。
+func (d Weekday) String() string // 星期的英文名（"Sunday"、"Monday"……）
+func (t Time) YearDay() int // 一年的第几天，平年的返回值范围1~365，闰年1~366。
+func (t Time) Clock() (hour, min, sec int)
+func (t Time) Hour() int
+func (t Time) Minute() int
+func (t Time) Second() int
+func (t Time) Nanosecond() int // 范围0~999999999。
+
+func (t Time) ISOWeek() (year, week int)
+返回时间点t对应的ISO 9601标准下的年份和星期编号。
+星期编号范围1~53，1月1号到1月3号可能属于上一年的最后一周，12月29号到12月31号可能属于下一年的第一周。
+
+func Now() Time
+返回当前本地时间
+
+创建一个本地时间
+func Unix(sec int64, nsec int64) Time // 使用秒或纳秒
+func UnixMilli(msec int64) Time // 使用毫秒
+func UnixMicro(usec int64) Time // 使用微秒
+
+返回时间戳的不同单位表示
+func (t Time) Unix() int64 // 秒
+func (t Time) UnixMilli() int64 // 毫秒
+func (t Time) UnixMicro() int64 // 微秒
+func (t Time) UnixNano() int64 // 纳秒
+
+包级别常量定义了一些常用时间日期格式，例如：
+	RFC3339     = "2006-01-02T15:04:05Z07:00"
+	RFC3339Nano = "2006-01-02T15:04:05.999999999Z07:00"
+	DateTime    = "2006-01-02 15:04:05"
+	DateOnly    = "2006-01-02"
+	TimeOnly    = "15:04:05"
+
+解析一个格式化的时间字符串
+func Parse(layout, value string) (Time, error)
+func ParseInLocation(layout, value string, loc *Location) (Time, error)
+当缺少时区信息时，Parse将时间解释为UTC时间，而ParseInLocation将返回值的Location设置为loc；
+当时间字符串提供了时区偏移量信息时，Parse会尝试去匹配本地时区，而ParseInLocation会去匹配loc。
+
+func (t Time) Format(layout string) string
+根据layout指定的格式返回t代表的时间点的格式化文本表示。
+	2006表示四位数年，01表示两位数月，02表示两位数日，15表示24小时制时，04表示分，05表示秒。
+	1~9位连续的0或9表示小数点后和秒数，3位到毫秒，6位到微秒，9位到纳秒，golang目前精确到微秒。
+	January和Jan表示英文月份全拼和缩写，Monday和Mon表示英文星期全拼和缩写。时间03后带PM或pm表示12小时制时。
+	MST为时区的英文字符表示，-0700为时区偏移量±hhmm，Z07:00输出Z（当UTC时）或时区偏移量±hhmm。
+	常用格式："2006/01/02-15:04:05.000000"、"20060102150405"
+	json序列化格式："2006-01-02T15:04:05.999999999Z07:00"
+
+func (t Time) String() string
+返回时间格式："2006-01-02 15:04:05.999999999 -0700 MST m=±ddd.nnnnnnnnn"。
+
+func (t Time) GoString() string
+返回创建t对象的Go代码语句，例如：time.Date(2006, time.January, 2, 13, 14, 05, 999999999, time.Local)
+
+func (t Time) Location() *Location
+返回t的地点和时区信息。
+
+func (t Time) Zone() (name string, offset int)
+计算t所在的时区，返回该时区的规范名（如"CET"）和该时区相对于UTC的时间偏移量（单位秒）。
+
+func (t Time) IsZero() bool
+报告t是否代表Time零值的时间点，January 1, year 1, 00:00:00 UTC。
+
+func (t Time) Local() Time
+返回采用本地和本地时区，但指向同一时间点的Time。
+
+func (t Time) UTC() Time
+返回采用UTC和零时区，但指向同一时间点的Time。
+
+func (t Time) In(loc *Location) Time
+返回采用loc指定的地点和时区，但指向同一时间点的Time。如果loc为nil会panic。
+
+func (t Time) Compare(u Time) int
+将时间t和u进行比较，如果t在u之前则返回-1，如果t在u之后则返回+1，如果它们相同则返回0。
+
+func (t Time) Before(u Time) bool
+如果t代表的时间点在u之前，返回真；否则返回假。
+
+func (t Time) After(u Time) bool
+如果t代表的时间点在u之后，返回真；否则返回假。
+
+func (t Time) Equal(u Time) bool
+判断两个时间是否相同，会考虑时区的影响，因此不同时区标准的时间也可以正确比较。
+本方法和用t==u不同，这种方法还会比较地点和时区信息。
+
+type Duration int64 代表两个时间点之间经过的时间，以纳秒为单位。可表示的最长时间段大约290年。
+const (
+    Nanosecond  Duration = 1
+    Microsecond          = 1000 * Nanosecond
+    Millisecond          = 1000 * Microsecond
+    Second               = 1000 * Millisecond
+    Minute               = 60 * Second
+    Hour                 = 60 * Minute
+)
+
+返回指定Duration单位的值
+func (d Duration) Hours() float64
+func (d Duration) Minutes() float64
+func (d Duration) Seconds() float64
+func (d Duration) Milliseconds() int64
+func (d Duration) Microseconds() int64
+func (d Duration) Nanoseconds() int64
+
+func ParseDuration(s string) (Duration, error)
+解析一个时间段字符串。一个时间段字符串是一个序列，每个片段包含可选的正负号、十进制数、可选的小数部分和单位后缀，
+如"300ms"、"-1.5h"、"2h45m"。合法的单位有"ns"、"us"/"µs"、"ms"、"s"、"m"、"h"。
+
+func (d Duration) String() string
+返回时间段采用"72h3m0.5s"格式的字符串表示。
+最前面可以有符号，数字+单位为一个单元，开始部分的0值单元会被省略；
+如果时间段<1s，会使用"ms"、"us"、"ns"来保证第一个单元的数字不是0；如果时间段为0，会返回"0"。
+
+func (t Time) Add(d Duration) Time
+返回时间点t+d。
+
+func (t Time) Sub(u Time) Duration
+返回一个时间段t-u。如果结果超出了Duration可以表示的最大值/最小值，将返回最大值/最小值。
+
+func Since(t Time) Duration
+返回从t到现在经过的时间，等价于time.Now().Sub(t)。
+
+func Until(t Time) Duration
+返回现在到t间隔的时间，等价于t.Sub(time.Now())
+
+func (t Time) AddDate(years int, months int, days int) Time
+返回增加了给出的年份、月份和天数的时间点Time。
+
+func Sleep(d Duration)
+阻塞当前go程至少d代表的时间段。d<=0时，Sleep会立刻返回。
+
+func NewTimer(d Duration) *Timer
+创建一个Timer，它会在最少过去时间段d后到期，向其自身的C字段发送当时的时间。
+
+func (t *Timer) Reset(d Duration) bool
+使t重新开始计时，（本方法返回后再）等待时间段d过去后到期。
+如果调用时t还在等待中会返回真；如果t已经到期或者被停止了会返回假。
+
+func (t *Timer) Stop() bool
+停止Timer的执行。如果停止了t会返回真；如果t已经被停止或者过期了会返回假。
+Stop不会关闭通道t.C，以避免从该通道的读取不正确的成功。
+
+func AfterFunc(d Duration, f func()) *Timer
+另起一个go程等待时间段d过去，然后调用f。它返回一个Timer，可以通过调用其Stop方法来取消等待和对f的调用。
+
+func After(d Duration) <-chan Time
+会在另一线程经过时间段d后向返回值发送当时的时间。等价于NewTimer(d).C。
+
+func NewTicker(d Duration) *Ticker
+返回一个新的Ticker，该Ticker包含一个通道字段，并会每隔时间段d就向该通道发送当时的时间。
+它会调整时间间隔或者丢弃tick信息以适应反应慢的接收者。如果d<=0会panic。关闭该Ticker可以释放相关资源。
+
+func (t *Ticker) Stop()
+关闭一个Ticker。在关闭后，将不会发送更多的tick信息。Stop不会关闭通道t.C，以避免从该通道的读取不正确的成功。
+
+func (t *Ticker) Reset(d Duration)
+停止并重置一个Ticker，d必须大于0非则会panic。
+
+func Tick(d Duration) <-chan Time
+对NewTicker的封装，只提供对Ticker的通道的访问。如果不需要关闭Ticker，本函数就很方便。
+
+Golang定时器包括：一次性定时器（Timer）和周期性定时器(Ticker)。
+周期性定时任务使用Ticker来实现，不应通过循环创建Timer实现，以免造成资源泄露。
