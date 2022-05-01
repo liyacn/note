@@ -1,0 +1,115 @@
+堆（heap）是一种满足特定条件的完全二叉树，
+小顶堆（最小堆/小根堆）任意节点的值<=其子节点的值，
+大顶堆（最大堆/大根堆）任意节点的值>=其子节点的值。
+
+通常用数组来存储堆，下标特点：
+根的下标为0，最后一个元素的下标为size-1。
+任一节点下标i，其父节点p下标为(i-1)/2，左子节点l下标为2*i+1，右子节点r下标为2*i+2(即l+1)。
+
+堆实现细节(两个操作)：
+	push：将新元素插入到堆的末尾，然后通过 “上浮” 操作，将其与父节点比较并交换，直到满足堆性质。
+	pop：从堆中删除最大值时，首先根节点和末尾节点直接交换，再删除末尾节点，
+		然后从根节点开始通过“下沉”操作，将其与子节点比较并交换，直到满足堆性质。
+
+最大堆从空堆开始逐个插入构建的时间复杂度是O(nlogn)，移除的平均时间复杂度也是O(nlogn)。
+无序堆从根向下调整，或从叶向上调整，构建最大堆的时间复杂度降为O(n)。
+
+堆可以用来实现优先队列，其中元素按照优先级进行排序，优先级高的元素先出队。
+堆可以用来实现排序算法：首先将数组构建成一个堆，然后不断删除堆顶元素并将其放到数组的末尾，最终得到一个有序数组。
+基于堆更加高效地解决Top-k问题：
+	初始化一个小顶堆，先将数组的前k个元素依次入堆。
+	从第k+1个元素开始，若当前元素大于堆顶元素，则将堆顶元素出堆，并将当前元素入堆。
+	遍历完成后，堆中保存的就是最大的k个元素，堆顶元素即为第k大元素。
+
+"container/heap"包提供了对任意类型（实现了heap.Interface接口）的堆操作。
+heap.Interface接口需要实现5个方法，前三个方法即sort.Interface接口需要实现的方法：
+	Len() int
+	Less(i, j int) bool
+	Swap(i, j int)
+	Push(x any)
+	Pop() any
+对heap.Interface接口提供了以下方法：
+func Init(h Interface)
+func Push(h Interface, x any)
+func Pop(h Interface) any
+func Remove(h Interface, i int) any
+func Fix(h Interface, i int)
+
+========== ========== 堆实现优先队列 ========== ==========
+
+package datastruct
+
+import (
+	"container/heap"
+	"fmt"
+)
+
+type Item struct {
+	Value    any
+	Priority int
+}
+
+type PriorityQueue []*Item
+
+func (pq *PriorityQueue) Push(x any) {
+	*pq = append(*pq, x.(*Item))
+}
+
+func (pq *PriorityQueue) Pop() any {
+	n := pq.Len()
+	if n == 0 {
+		return nil
+	}
+	end := n - 1
+	item := (*pq)[end]
+	(*pq)[end] = nil // don't stop the GC from reclaiming the item eventually
+	*pq = (*pq)[:end]
+	return item
+}
+
+func (pq PriorityQueue) Len() int {
+	return len(pq)
+}
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	return pq[i].Priority > pq[j].Priority
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func ExamplePriorityQueue() {
+	pq := PriorityQueue{
+		{
+			Value:    "apple",
+			Priority: 3,
+		},
+		{
+			Value:    "banana",
+			Priority: 1,
+		}, {
+			Value:    "cherry",
+			Priority: 5,
+		},
+	}
+	heap.Init(&pq)
+	heap.Push(&pq, &Item{
+		Value:    "pear",
+		Priority: 2,
+	})
+	heap.Push(&pq, &Item{
+		Value:    "orange",
+		Priority: 4,
+	})
+	for pq.Len() > 0 {
+		v := heap.Pop(&pq).(*Item)
+		fmt.Println(*v)
+	} /*
+		{cherry 5}
+		{orange 4}
+		{apple 3}
+		{pear 2}
+		{banana 1}
+	*/
+}
