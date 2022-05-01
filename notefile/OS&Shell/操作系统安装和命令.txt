@@ -1,0 +1,118 @@
+系统用户主目录：
+    windows: C:\Users\<user>
+    linux: /home/<user>
+    mac: /Users/<user>
+
+hosts文件位置：
+    windows: C:\Windows\System32\drivers\etc
+    linux/mac: /etc
+
+========== ========== ========== ========== ==========
+
+Windows创建软连接（需管理员身份运行）：（等价于unix的： ln -s 目标 链接）
+CMD> mklink /D 链接 目标
+	eg: mklink /D "%USERPROFILE%\OneDrive\Documents" "E:\Documents"
+PS> New-Item -ItemType SymbolicLink -Path "链接" -Target "目标"
+	eg: New-Item -ItemType SymbolicLink -Path "$HOME\OneDrive\Documents" -Target "E:\Documents"
+
+开机自动在后台运行：
+将需要执行的程序、脚本或其快捷方式添加到以下目录即可
+C:\Users\<用户名>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+
+以管理员权限修改配置文件：
+资源窗口点击“文件”->“打开powershell”->“以管理员身份打开”
+在powershell窗口执行
+notepad 文件名
+即可在打开的记事本窗口编辑保存
+
+命令运行程序需将.exe所在目录添加到系统环境变量Path
+计算机>设置>关于>高级系统设置>环境变量
+
+========== ========== ========== ========== ==========
+
+Homebrew官网： https://brew.sh/
+
+brew update #更新brew
+brew search TEXT|/REGEX/ #搜索软件包
+brew info [FORMULA|CASK...] #查看软件包信息
+brew install FORMULA|CASK... #安装软件包
+brew upgrade [FORMULA|CASK...] #更新所有/指定软件包
+brew uninstall FORMULA|CASK... #卸载指定的软件包，--force彻底卸载包括旧版本
+brew list [FORMULA|CASK...] #查看本机已安装软件包
+brew outdated #查看可更新的软件包列表
+brew cleanup -n #列出需要清理的包
+brew cleanup [FORMULA|CASK...] #清理所有/指定的过时软件
+brew config #查看配置信息
+brew services list #列出正在运行的服务
+brew services start service_name #启动指定服务
+brew services stop service_name #停止指定服务
+brew services restart service_name #重启指定服务
+
+brew install nginx #安装nginx到/opt/homebrew/etc/nginx
+
+========== ========== ========== ========== ==========
+
+Ubuntu桌面版24.04默认安装挂载2个分区
+	EFI分区 /boot/efi FAT32
+	根分区 / ext4
+手动分区可选
+	用户数据分区 /home ext4
+	动态数据分区 /var ext4
+	交换分区 swap swap (需要休眠才单独分配，1~2倍内存大小，系统默认使用交换文件更灵活)
+
+安装五笔输入法，只需在设置>区域与语言，添加输入源即可。
+
+下载.deb文件安装软件，进入到所在目录执行命令：
+sudo dpkg -i *.deb
+也可以直接双击文件进入安装
+
+终端编辑器内置nano替代vim，文本编辑器内置gnome-text-editor代替gedit。
+可在.bashrc添加一行： alias gedit='gnome-text-editor' 命令gedit前面勿加sudo，打开和保存时会认证。
+文件管理窗口显示隐藏文件，可通过Ctrl+h切换。
+
+查看定时任务：
+crontab -l
+编辑定时任务：
+crontab -e
+写入一行格式为： 分 时 日 月 周 命令
+例如： 45 22 * * * cd /home/ubuntu/github/note;git pull
+删除用户的crontab文件：
+crontab -r
+系统的crontab文件通常位于/etc/crontab，以root用户的身份执行任务。
+
+apt是一个在Debian和Ubuntu中的Shell软件包管理器。apt命令执行需要超级管理员权限。
+apt [options] [command] [package ...]
+	options：-h（帮助），-y（当安装过程提示选择全部为"yes"），-q（不显示安装的过程）等等。
+	command：要进行的操作。
+	package：安装的包名。
+apt常用命令
+	列出所有可更新的软件清单命令：sudo apt update
+	升级软件包：sudo apt upgrade
+	可以将两个命令组合起来一键更新：sudo apt update && sudo apt upgrade -y
+	列出可更新的软件包及版本信息：apt list --upgradeable
+	升级软件包，升级前先删除需要更新软件包：sudo apt full-upgrade
+	安装指定的软件命令：sudo apt install <package_name>
+	安装一个软件包，但如果软件包已经存在，则不要升级它，可以使用 –no-upgrade
+	如果只想升级，不要安装可以使用 --only-upgrade
+	如果需要安装指定版本：sudo apt install <package_name>=<version_number>
+	安装多个软件包：sudo apt install <package_1> <package_2> <package_3>
+	更新指定的软件命令：sudo apt update <package_name>
+	显示软件包具体信息：sudo apt show <package_name>
+	删除软件包命令：sudo apt remove <package_name>
+	清理不再使用的依赖和库文件: sudo apt autoremove
+	移除软件包及配置文件: sudo apt purge <package_name>
+	查找软件包命令： sudo apt search <keyword>
+	列出所有已安装的包：apt list --installed
+	列出所有已安装的包的版本信息：apt list --all-versions
+桌面版系统可以通过：软件和更新>下载自>...选择一个源并保存，点击重新载入后会更新source.list
+
+安装： sudo apt install nginx -y
+查看状态： sudo systemctl status nginx
+启动： sudo systemctl start nginx
+重启： sudo systemctl restart nginx
+停止： sudo systemctl stop nginx
+重载： sudo systemctl reload nginx
+开机自启： sudo systemctl enable nginx
+查看版本： nginx -v
+检查配置语法： sudo nginx -t
+重新加载： sudo nginx -s reload

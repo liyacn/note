@@ -1,0 +1,35 @@
+文档参考：
+https://svelte.dev/
+https://kit.svelte.dev/docs/adapter-static
+
+========== ========== 初始化项目 ========== ==========
+
+交互式创建：
+1. npx sv create my-app
+2. Which template would you like? 选择模板 SvelteKit minimal
+3. Add type checking with Typescript? 选择 Yes, using Typescript syntax
+4. What would you like to add to your project? 可按需勾选 prettier, eslint, sveltekit-adapter, devtools-json
+5. Which SvelteKit adapter would you like to use? 选择static
+
+命令参数指定：
+npx sv create --template minimal --types ts --add prettier eslint sveltekit-adapter="adapter:static" devtools-json --install npm my-app
+
+========== ========== 编译配置 ========== ==========
+
+修改svelte.config.js文件内容：
+import adapter from '@sveltejs/adapter-static';
+export default {
+	kit: {
+		adapter: adapter({
+			pages: 'dist', // default: build
+			assets: 'dist', // default: build
+			fallback: undefined,
+			precompress: false,
+			strict: true
+		})
+	}
+};
+
+创建 src/routes/+layout.js 文件并写入两行：
+export const prerender = true;
+export const ssr = false;

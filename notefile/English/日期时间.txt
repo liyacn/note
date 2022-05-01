@@ -1,0 +1,48 @@
+year  month  day  hour  minute  second
+ 年     月    日    时     分       秒
+
+millisecond  microsecond  nanosecond
+ 毫秒          微秒          纳秒
+
+week  date  time
+星期   日期   时间
+
+月份和简写
+1   January    Jan
+2   February   Feb
+3   March      Mar
+4   April      Apr
+5   May        May
+6   June       Jun
+7   July       Jul
+8   August     Aug
+9   September  Sep
+10  October    Oct
+11  November   Nov
+12  December   Dec
+
+星期和简写
+日    Sunday     Sun
+一    Monday     Mon
+二    Tuesday    Tue
+三    Wednesday  Wed
+四    Thursday   Thu
+五    Friday     Fri
+六    Saturday   Sat
+
+weekday  weekend
+周一到五  周六日
+
+季节   season
+春季   spring
+夏季   summer
+秋季   autumn（英式）/fall（美式）
+冬季   winter
+
+世纪  century
+日历  calendar
+时间表  schedule/timetable
+一刻钟  quarter
+截止时间  deadline
+到期/失效  expire
+周期  period/cycle
