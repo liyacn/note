@@ -1,0 +1,141 @@
+"encoding/json"包实现了json对象的编解码。
+
+func Valid(data []byte) bool 校验是否为有效的json格式
+
+type Marshaler interface {
+	MarshalJSON() ([]byte, error)
+}
+实现了Marshaler接口的类型可以将自身序列化为合法的json描述。
+type Unmarshaler interface {
+	UnmarshalJSON([]byte) error
+}
+实现了Unmarshaler接口的对象可以将自身的json描述反序列化。
+
+func Marshal(v any) ([]byte, error)
+返回v的json编码，会递归处理值，会转义<>&
+
+func MarshalIndent(v any, prefix, indent string) ([]byte, error)
+类似Marshal但会使用缩进将输出格式化
+
+func Unmarshal(data []byte, v any) error
+解析json编码的数据并将结果存入v指向的值
+
+func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
+将json编码的src调整缩进之后写入dst
+
+func HTMLEscape(dst *bytes.Buffer, src []byte)
+将json编码的src进行html转义后写入dst
+
+func Compact(dst *bytes.Buffer, src []byte) error
+将json编码的src中无用的空白字符剔除后写入dst
+
+func NewEncoder(w io.Writer) *Encoder
+创建一个将数据写入w的*Encoder
+func (enc *Encoder) SetEscapeHTML(on bool)
+设置编码是否使用html转义，默认是，可以设为false禁用转义
+func (enc *Encoder) SetIndent(prefix, indent string)
+设置编码的前缀和缩进
+func (enc *Encoder) Encode(v any) error
+将v的json编码写入输出流，并会写入一个换行符
+
+func NewDecoder(r io.Reader) *Decoder
+创建一个从r读取并解码json对象的*Decoder
+func (dec *Decoder) UseNumber()
+设置为当接收端是any时将json数字解码为Number类型而不是float64类型
+func (dec *Decoder) DisallowUnknownFields()
+设置为当目标是一个结构，并且输入流中包含任何不匹配该结构的非忽略的导出字段时，Decoder返回一个错误。
+func (dec *Decoder) Decode(v any) error
+从输入流读取下一个json编码值并保存在v指向的值里
+
+type Number string 代表一个json数字字面量
+func (n Number) String() string 返回该数字的字面值文本表示
+func (n Number) Int64() (int64, error) 将该数字作为int64类型返回
+func (n Number) Float64() (float64, error) 将该数字作为float64类型返回
+
+========== ========== ========== ========== ==========
+
+结构体的值编码为json对象，每一个导出字段变成该对象的一个成员，除非字段的标签是"-"，或字段是零值且标签指定了omitempty选项。
+匿名的结构体字段一般序列化为他们内部的导出字段就好像位于外层结构体中一样。
+布尔类型编码为json布尔类型。
+浮点数、整数和Number类型的值编码为json数字类型。
+数组和切片类型的值编码为json数组，但[]byte编码为base64编码字符串，nil切片编码为null。
+map序列化时会根据键的字典顺序升序，(键类型为数值的会按string处理)。
+
+struct {
+	FieldA int    `json:"-"`                 //指定忽略字段
+	FieldB bool   `json:"field_b"`           //字段在json里的键为"field_b"
+	FieldC string `json:"field_c,omitempty"` //omitempty选项当字段为零值将在对象中省略掉
+	FieldD int    `json:"field_d,string"`    //string选项将数值类型编码为json字符串。
+	fieldE string //私有字段忽略
+}
+
+========== ========== ========== ========== ==========
+
+type BoolString bool
+
+func (s BoolString) MarshalJSON() ([]byte, error) {
+	if s {
+		return []byte(`"Y"`), nil
+	}
+	return []byte(`"N"`), nil
+}
+
+func (s *BoolString) UnmarshalJSON(src []byte) error {
+	*s = string(src) == "Y"
+	return nil
+}
+
+type Data struct {
+	ID         int            `json:"id,string"`
+	Name       string         `json:"name,omitempty"`
+	Pwd        string         `json:"-"`
+	Desc       string         `json:"desc"`
+	Tag        string         //不打json标签，序列化的key为Tag，反序列化时仍能取到key为tag的值
+	Numbers    []int          `json:"numbers"`
+	Bytes      []byte         `json:"bytes"`
+	Map        map[string]any `json:"map"`
+	BoolString BoolString     `json:"bool_string"`
+}
+
+func main() {
+	data := &Data{
+		ID:   12,
+		Name: "",
+		Pwd:  "pwd",
+		Desc: `aaa
+bbb
+ccc`,
+		Tag:     "<&>",
+		Numbers: []int{3, 4},
+		Bytes:   []byte("ABC"),
+		Map: map[string]any{
+			"i": 56,
+			"b": true,
+		},
+		BoolString: true,
+	}
+	b, _ := json.Marshal(data)
+	fmt.Println(string(b))
+	//{"id":"12","desc":"aaa\nbbb\nccc","Tag":"\u003c\u0026\u003e","numbers":[3,4],"bytes":"QUJD","map":{"b":true,"i":56},"bool_string":"Y"}
+	output := `{"id":"12","tag":"\u003c\u0026\u003e","bytes":"QUJD","map":{"b":true,"i":56},"bool_string":"Y"}`
+	var dst Data
+	err := json.Unmarshal([]byte(output), &dst)
+	fmt.Println(err)
+	fmt.Printf("%+v", dst)
+	//{ID:12 Name: Pwd: Desc: Tag:<&> Numbers:[] Bytes:[65 66 67] Map:map[b:true i:56] BoolString:false}
+
+	b = []byte(`{"id":12,"name":"Tom","age":"18","desc":"stu"}`)
+	var u struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+		Desc string `json:"desc"`
+	}
+	err = json.Unmarshal(b, &u)
+	fmt.Println(err)       // json: cannot unmarshal string into Go struct field .age of type int
+	fmt.Printf("%+v\n", u) // {ID:12 Name:Tom Age:0 Desc:stu} 类型错误的字段为零值
+	m := make(map[string]string)
+	err = json.Unmarshal(b, &m)
+	fmt.Println(err) // json: cannot unmarshal number into Go value of type string
+	fmt.Println(m)   // map[age:18 desc:stu id: name:Tom] 类型错误的字段key不存在
+}
