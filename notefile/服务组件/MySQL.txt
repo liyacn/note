@@ -1,0 +1,70 @@
+MySQL下载地址： https://dev.mysql.com/downloads/mysql/
+可视化管理工具Workbench下载地址： https://dev.mysql.com/downloads/workbench/
+参考手册： https://dev.mysql.com/doc/refman/8.0/en/
+DDL语句： https://dev.mysql.com/doc/refman/8.0/en/sql-data-definition-statements.html
+存储引擎： https://dev.mysql.com/doc/refman/8.0/en/storage-engines.html
+mysqldump导出备份： https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html
+
+========== ========== 常用命令 ========== ==========
+
+mysql -h host_name -u user_name -p db_name #连接服务器
+mysql> QUIT #断开连接
+mysql> SHOW CHARACTER SET; #查看支持的字符集
+mysql> SHOW COLLATION WHERE Charset='utf8mb4'; #查看排序规则
+
+mysql> SHOW DATABASES; #查看所有库
+mysql> SHOW CREATE DATABASE db_name; #查看建库语句
+mysql> USE db_name; #进入指定库
+mysql> SHOW TABLES; #查看当前库所有表和视图
+mysql> SHOW TABLES FROM db_name; #查看指定库所有表和视图
+mysql> SHOW CREATE TABLE tb_name; #查看建表语句
+mysql> DESC tb_name; #查看表结构
+
+========== ========== 数据类型 ========== ==========
+
+BIT[(M)]: M表示每个值的位数，取值范围为1~64，默认1。
+TINYINT[(M)] [UNSIGNED] [ZEROFILL]: 1字节整数(int8/uint8)。
+BOOL, BOOLEAN: TINYINT(1)的同义词，非0值代表true，0代表false。
+SMALLINT[(M)] [UNSIGNED] [ZEROFILL]: 2字节整数(int16/uint16)。
+MEDIUMINT[(M)] [UNSIGNED] [ZEROFILL]: 3字节整数(int24/uint24)。
+INT[(M)] [UNSIGNED] [ZEROFILL]: 4字节整数(int32/uint32)。同义词：INTEGER
+BIGINT[(M)] [UNSIGNED] [ZEROFILL]: 8字节整数(int64/uint64)。
+SERIAL: 'BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE.' 的别名
+
+DECIMAL[(M[,D])]: 紧凑的定点数字，M是总位数（精度）默认10最大64，D是小数点后的位数默认0最大30，四则运算都以65位的精度完成。同义词：DEC,NUMERIC,FIXED。
+FLOAT: 单精度浮点数，4字节。
+FLOAT(p): p为精度的浮点数，0≤p≤24时为单精度浮点，25≤p≤53时为双精度浮点，是为了ODBC兼容性而提供的语法。
+DOUBLE: 双精度浮点数，8字节。同义词：DOUBLE PRECISION, REAL。
+
+YEAR: 4位格式的年份，值显示为[1901,2155]或0000，1字节。
+DATE: 一个日期，支持的范围是[1001-01-01,9999-12-31]，3字节。
+TIME[(fsp)]: 一段时间，范围是'-838:59:59.000000'到'838:59:59.000000'，3字节。可选的fsp值范围从0到6，以指定小数秒精度，默认精度为0。
+DATETIME[(fsp)]: 日期和时间的组合，支持的范围为[1000-01 00:00:00.000000, 9999-12-31 23:59:59.499999]，8字节。
+TIMESTAMP[(fsp)]: 一个时间戳，范围为UTC'1970-01-01 00:00:01.000000'到UTC'2038-01-19 03:14:07.499999'，4字节。
+允许使用字符串或数字向YEAR,DATE,TIME,DATETIME,TIMESTAMP列分配值。
+TIMESTAMP和DATETIME列可以自动初始化并更新为当前日期和时间(即当前时间戳)。可指定NULL或NOT NULL属性，DEFAULT值也可以是常量字符串或数字。
+example: (
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP -- DEFAULT 0,不指定NOT NULL则DEFAULT NULL
+)
+
+CHAR[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]: 一个固定长度的字符串，在存储时总是用空格右填充到指定的长度。M表示以字符为单位的列长度，取值范围为0~255，默认1。同义词：CHARACTER,NATIONAL CHAR,NCHAR
+VARCHAR(M) [CHARACTER SET charset_name] [COLLATE collation_name]: 可变长度的字符串。M表示以字符为单位的最大列长度，取值范围是0~65535。VARCHAR的有效最大长度取决于最大行大小(65535字节在所有列之间共享)和所使用的字符集。MySQL将VARCHAR值存储为1字节(M≤255)或2字节(M>255)长度的前缀加上数据。同义词：CHARACTER VARYING,NATIONAL VARCHAR,NVARCHAR
+BINARY[(M)]: 类似CHAR但是以二进制字节存储。同义词：CHAR BYTE
+VARBINARY(M): 类似VARCHAR但是以二进制字节存储。
+
+TINYBLOB: 最大长度255字节，1字节长度的前缀存储值中的字节数。
+BLOB[(M)]: 最大长度65535字节，2字节长度的前缀存储值中的字节数。
+MEDIUMBLOB: 最大长度16777215字节，3字节长度的前缀存储值中的字节数。
+LONGBLOB: 最大长度4294967295字节，4字节长度的前缀存储值中的字节数。
+
+TINYTEXT [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度255字符，1字节长度的前缀存储值中的字节数。
+TEXT[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度65535字符，2字节长度的前缀存储值中的字节数。
+MEDIUMTEXT [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度16777215字符，3字节长度的前缀存储值中的字节数。
+LONGTEXT [CHARACTER SET charset_name] [COLLATE collation_name]: 最大长度4294967295字符，4字节长度的前缀存储值中的字节数。
+对于字符串列(CHAR、VARCHAR,TEXT)以字符单位解释长度规范，对于二进制字符串列(BINARY,VARBINARY,BLOB)以字节单位解释长度规范。
+
+ENUM('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]: 枚举类型，值只能是'value1','value2',...,'',NULL之一，最多支持65535项。
+SET('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]: 集合类型，值只能在'value1','value2',...,'',NULL中选择，最多支持65535项。
+
+JSON: json对象，所需的空间与LONGBLOB或LONGTEXT大致相同。
