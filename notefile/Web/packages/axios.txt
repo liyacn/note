@@ -1,0 +1,200 @@
+文档参考：
+https://axios-http.com/
+https://github.com/axios/axios/
+https://www.npmjs.com/package/axios
+
+安装：
+npm i axios
+
+使用时通常需要二次封装，对请求和响应做一些统一处理。
+
+========== @/api/http.ts 统一封装请求实例 ==========
+
+import axios from "axios";
+
+const instance = axios.create({
+  baseURL: "https://mock.apifox.cn/m1/1555493-0-default", //替换成环境变量
+  timeout: 9000, // 毫秒
+});
+
+// 添加请求拦截器
+instance.interceptors.request.use(
+  (cfg) => {
+    // 在发送请求之前做些什么
+    cfg.headers = cfg.headers || {}; //严格模式下
+    cfg.headers["X-Request-Time"] = Date.now().toString();
+    cfg.headers["Authorization"] = "xxx"; //从stores取值
+    return cfg; //无需指定content-type，axios会根据传值类型自动添加
+  },
+  (err) => {
+    // 对请求错误做些什么
+    return Promise.reject(err);
+  }
+);
+
+// 添加响应拦截器
+instance.interceptors.response.use(
+  (res) => {
+    // 2xx 范围内的状态码都会触发该函数。
+    // 对响应数据做点什么
+    return res.data; //这里只取body体内容
+  },
+  (err) => {
+    // 超出 2xx 范围的状态码都会触发该函数。
+    // 对响应错误做点什么
+    return Promise.reject(err);
+  }
+);
+
+export default {
+  get<T>(url: string, data = {}): Promise<T> {
+    return instance.request({
+      method: "get",
+      url: url,
+      params: data,
+    });
+  },
+  post<T>(url: string, data = {}): Promise<T> {
+    return instance.request({
+      method: "post",
+      url: url,
+      data: data,
+    });
+  },
+  put<T>(url: string, data = {}): Promise<T> {
+    return instance.request({
+      method: "put",
+      url: url,
+      data: data,
+    });
+  },
+  delete<T>(url: string, data = {}): Promise<T> {
+    return instance.request({
+      method: "delete",
+      url: url,
+      params: data,
+    });
+  },
+};
+
+========== @/api/errors.ts 定义错误处理方法 ==========
+
+import { AxiosError, AxiosResponse } from "axios";
+
+// 不同接口的错误提示方式有所不同，所以抽出来手动控制。也可在响应拦截器统一处理。
+const errorMsg = (err: AxiosError) => {
+  if (err === undefined || err.response === undefined || err.code === "ERR_NETWORK") {
+    console.error("网络错误"); //替换成UI框架的弹出消息提示
+    return;
+  }
+  const {
+    status,
+    statusText,
+    data: { msg },
+  } = <AxiosResponse>err.response;
+  if (status === 401) {
+    console.warn("登录已失效"); //替换成提示并跳转登录页
+    return;
+  }
+  if (status < 500) {
+    console.warn(`(${status}) ${msg || statusText}`);
+  } else {
+    console.error(`(${status}) ${msg || "服务器开小差啦"}`);
+  }
+};
+
+//401回登录页，其余显示错误页
+const errorPage = (err: AxiosError) => {
+  if (err === undefined || err.response === undefined || err.code === "ERR_NETWORK") {
+    console.info("show error");
+    return;
+  }
+  const {
+    status,
+    statusText,
+    data: { msg },
+  } = <AxiosResponse>err.response;
+  switch (status) {
+    case 401:
+      console.info("show 401");
+      break;
+    case 403:
+      console.info("show 403");
+      break;
+    case 404:
+      console.info("show 404");
+      break;
+    default:
+      if (status < 500) {
+        console.info("show warn",`(${status}) ${msg || statusText}`);
+      } else {
+        console.info("show 500");
+      }
+  }
+};
+
+const slient = () => {
+  void 0;
+};
+
+export default {
+  errorMsg,
+  errorPage,
+  slient,
+};
+
+========== @/api/index.ts 单一入口导出所有api接口 ==========
+
+import * as models from "models";
+import errors from "./errors";
+import http from "./http";
+
+export default {
+  ...errors,
+  captcha: () => http.get<models.CaptchaResp>("/captcha"), //获取验证码
+  login: (data: models.LoginArgs) => http.post<models.LoginResp>("/user/login", data), //登录
+};
+
+========== @/api/models/xxx.ts 请求响应结构定义 ==========
+//也可用namepace代替module，也可用interface代替type，也可逐个export导出
+
+declare module "models" {
+  type CaptchaResp = {
+    session_key: string;
+    base64_image: string;
+  };
+  type LoginArgs = {
+    username: string;
+    password: string;
+    session_key: string;
+    captcha: string;
+  };
+  type LoginResp = {
+    token: string;
+    username: string;
+    authority: Authority;
+  };
+}
+
+declare module "models" {
+  type Authority = { [key: string]: number };
+}
+
+========== ========== 使用 ========== ==========
+
+import api from "@/api";
+import { LoginArgs } from "models";
+
+const data: LoginArgs = {
+  username: "admin",
+  password: "123456",
+  session_key: "xxxxxx",
+  captcha: "kcnh",
+};
+
+api
+  .login(data)
+  .then((res) => {
+    console.log(res.token);
+  })
+  .catch(api.errorMsg); //或 .catch((err) => { api.errorMsg(err); });

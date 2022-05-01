@@ -1,0 +1,44 @@
+"golang.org/x/sync"是"sync"标准库的官方扩展包。
+singleflight提供了重复函数调用抑制机制，多用于热点数据并发控制，防止缓存击穿。
+errgroup为处理一组goroutine提供同步、错误传播和上下文取消，多用于耗时IO请求的并发控制。
+
+========== ========== ========== ========== ==========
+
+import "golang.org/x/sync/singleflight"
+
+var single = &singleflight.Group{} //函数外全局声明，通常注入到依赖receiver结构中
+
+func GetServerToken(ctx context.Context) (string, error) {
+    //Do方法第一个参数必须唯一，可使用数据唯一标识或者函数方法名保证唯一性
+	val, err, _ := single.Do("GetServerToken", func() (any, error) {
+	    //同一时间同一实例只会发起一个请求，其余请求等待返回结果共享
+		return dao.GetServerToken(ctx)
+	})
+	return val.(string), err //结果需断言
+}
+
+========== ========== ========== ========== ==========
+
+import "golang.org/x/sync/errgroup"
+
+//如需发起多个http请求获取结果，可以通过errgroup将串行改成并发，并在出现任一失败时退出所有协程
+func MultiRequestCount(ctx context.Context, keys []string) (int64, error) {
+	//单纯的计数使用原子值保存累加结果，不应使用chan(浪费资源，使用不当还可能造成阻塞)
+	total := &atomic.Int64{}
+	g, c := errgroup.WithContext(ctx)
+	for _, val := range keys {
+		addr := val //version<1.22必须赋值到局部变量，否则迭代完成才开启协程，所有协程都会处理迭代最后一项。
+		g.Go(func() error {
+			count, err := apiCount(c, addr) //这里应使用errgroup返回的context
+			if err != nil {
+				return err
+			}
+			total.Add(count)
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return 0, err
+	}
+	return total.Load(), nil
+}
